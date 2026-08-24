@@ -60,6 +60,16 @@ Planned infrastructure:
 | Prometheus and Grafana | Domain and reliability metrics |
 | Kong OSS | Edge gateway |
 
+## Local setup
+
+```bash
+docker compose up -d
+```
+
+Postgres initialises the three service databases automatically on first start via [`scripts/init-databases.sql`](scripts/init-databases.sql).
+
+Copy `.env.example` to `.env` and fill in values before starting any service.
+
 ## Current state
 
 Module boundaries and intended architecture are documented. Application and infrastructure are not yet implemented.
