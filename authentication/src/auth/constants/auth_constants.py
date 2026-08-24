@@ -1,0 +1,18 @@
+JWT_ALGORITHM = "RS256"
+TOKEN_TYPE = "bearer"
+PASSWORD_MIN_LENGTH = 8
+EMAIL_MAX_LENGTH = 255
+PASSWORD_HASH_MAX_LENGTH = 255
+AUTH_ROUTER_PREFIX = "/auth"
+USERS_TABLE_NAME = "users"
+
+JWT_CLAIM_SUB = "sub"
+JWT_CLAIM_EMAIL = "email"
+JWT_CLAIM_IAT = "iat"
+JWT_CLAIM_EXP = "exp"
+JWT_CLAIM_ISS = "iss"
+JWT_CLAIM_AUD = "aud"
+
+ERROR_EMAIL_ALREADY_REGISTERED = "email already registered"
+ERROR_INVALID_CREDENTIALS = "invalid credentials"
+ERROR_PASSWORD_TOO_SHORT = "password must be at least {min_length} characters"

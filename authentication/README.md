@@ -22,12 +22,12 @@ Registration must remain available when Stripe, RabbitMQ, Redis, auction, or set
 
 ## Interfaces
 
-Planned public HTTP endpoints:
+Public HTTP endpoints (port `8001`):
 
-- `POST /auth/register`
-- `POST /auth/login`
+- `POST /auth/register` — body: `{ "email", "password" }`; returns `201` with id/email/created_at
+- `POST /auth/login` — body: `{ "email", "password" }`; returns `200` with RS256 `access_token`
 
-JWTs contain the stable user ID in `sub` and are signed only with authentication's RS256 private key. Kong receives the public key only.
+JWTs contain `sub` (user id), `email`, `iat`, `exp`, `iss`, `aud` and are signed only with authentication's RS256 private key. Kong receives the public key only.
 
 ## Data ownership
 
@@ -39,6 +39,54 @@ Authentication owns its PostgreSQL database and migration history under `alembic
 - [`frontend/`](../frontend/README.md) — registration and login client
 - [`docs/`](../docs/README.md) — contracts and architectural decisions
 
+## Local development
+
+### Prerequisites
+
+- Python 3.12+, [uv](https://docs.astral.sh/uv/), Docker
+
+### 1. Start Postgres
+
+From the repository root:
+
+```bash
+docker compose up -d
+```
+
+### 2. Generate RS256 keypair (once)
+
+```bash
+mkdir -p authentication/keys
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
+  -out authentication/keys/private.pem
+openssl rsa -in authentication/keys/private.pem -pubout \
+  -out authentication/keys/public.pem
+```
+
+`authentication/keys/` is gitignored. Never commit `private.pem`. The public key will be mounted into the gateway in Phase 7.
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env   # run from authentication/
+```
+
+Edit `DATABASE_URL` and `JWT_PRIVATE_KEY_PATH` to match your local paths.
+
+### 4. Apply migrations
+
+```bash
+cd authentication
+uv run alembic upgrade head
+```
+
+### 5. Run the service
+
+```bash
+cd authentication
+uv run uvicorn auth.main:app --host 127.0.0.1 --port 8001 --reload
+```
+
 ## Current state
 
-Folder scaffold only. No authentication application, database model, or migration exists yet.
+Application skeleton implemented: settings, async SQLAlchemy session, User model, Alembic migration, RS256 JWT helpers. Register and login routes not yet implemented.
