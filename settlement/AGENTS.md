@@ -20,7 +20,9 @@ Read [`README.md`](README.md), root [`AGENTS.md`](../AGENTS.md), and the settlem
 - Use explicit Stripe timeouts and bounded retries only where idempotency makes them safe.
 - Never log Stripe secrets, payment-method details, webhook secrets, or sensitive payloads.
 
-## Required tests
+## Required e2e scenarios
+
+Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Prove these through Kong with the real app, settlement PostgreSQL, Stripe test fixtures, and outbox:
 
 - Lazy Customer creation and reuse
 - SetupIntent off-session configuration

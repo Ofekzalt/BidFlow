@@ -1,7 +1,7 @@
 [project]
 name = "authentication"
 version = "0.1.0"
-description = "User registration, credentials, and RS256 JWT issuance"
+description = "User registration, credentials, and HS256 JWT issuance"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ruff>=0.8.0"]
+dev = ["ruff>=0.8.0", "pytest>=8.3.0"]
 
 [build-system]
 requires = ["hatchling"]
@@ -26,6 +26,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/auth"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 88

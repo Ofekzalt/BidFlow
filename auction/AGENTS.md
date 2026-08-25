@@ -19,7 +19,9 @@ Read [`README.md`](README.md), root [`AGENTS.md`](../AGENTS.md), approved auctio
 - Workers stop new claims during shutdown and finish or roll back in-flight work.
 - Redis is optional and must not affect correctness.
 
-## Required tests
+## Required e2e scenarios
+
+Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Prove these through Kong with the real app, auction PostgreSQL, and messaging fixtures:
 
 - Concurrent bids with no lost update
 - Fifty duplicate idempotent requests create one bid

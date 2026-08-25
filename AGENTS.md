@@ -12,7 +12,7 @@ The repository is in early scaffolding. Architecture documentation describes app
 
 | Path | Owns |
 | --- | --- |
-| [`authentication/`](authentication/README.md) | Registration, credentials, RS256 signing, and JWT issuance |
+| [`authentication/`](authentication/README.md) | Registration, credentials, HS256 signing, and JWT issuance |
 | [`auction/`](auction/README.md) | Auctions, bids, concurrency, lifecycle workers, local projections, and auction events |
 | [`settlement/`](settlement/README.md) | Stripe customers, payment methods, payments, webhooks, notifications, and settlement events |
 | [`frontend/`](frontend/README.md) | React, Vite, and TypeScript browser client |
@@ -38,7 +38,7 @@ Before changing a module:
 - RabbitMQ carries durable business events. Redis is optional cache or ephemeral infrastructure.
 - Redis failure must not permit invalid bids, block otherwise valid authoritative bids, or duplicate payments.
 - Stripe state belongs only to settlement.
-- Authentication alone owns the RS256 private key. Gateway receives only the public key.
+- Authentication signs JWTs with HS256 using `JWT_SECRET`. Do not commit the secret or put it in the frontend. See [`docs/adr/0001-hs256-jwt-signing.md`](docs/adr/0001-hs256-jwt-signing.md).
 - Stripe webhooks are the canonical source of final payment events.
 - Consumers ACK only after their database transaction commits.
 - Workers stop claiming new work on shutdown and finish or safely roll back in-flight work.
@@ -46,12 +46,28 @@ Before changing a module:
 - Money uses integer cents. Timestamps use timezone-aware UTC.
 - Never add a distributed-system pattern without a concrete requirement and consumer.
 
+## Testing
+
+Prove behavior through the running stack, not isolated helpers. Keep coverage small: one e2e test per meaningful contract or failure mode.
+
+**E2e only:** HTTP against real PostgreSQL, the real service process, and Kong for API routes.
+
+**Platform e2e (later):** browser flows through Kong once the frontend exists.
+
+**Workers and consumers:** run the real worker entrypoint with real PostgreSQL and messaging fixtures; still e2e, not isolated helpers.
+
+**TDD:** write a failing e2e test for the user-visible contract, then implement.
+
+**Forbidden:** unit tests; integration tests (`TestClient`, `ASGITransport`, in-process ASGI); mocking the owned database; changing tests to match broken behavior; tests that only assert mocks were called.
+
+Module `AGENTS.md` files list required e2e scenarios for their bounded context.
+
 ## Change rules
 
 - Keep changes small and traceable to the request.
 - Do not refactor, rename, reformat, or clean adjacent code without instruction.
 - Do not add code comments.
-- Write a failing test before implementation for features and bug fixes.
+- Write a failing e2e test before implementation for features and bug fixes.
 - Do not change an existing test merely to make it pass.
 - Add migrations for schema changes; never edit an already-applied migration.
 - Do not introduce cross-module imports. Communicate through HTTP contracts or versioned events.
