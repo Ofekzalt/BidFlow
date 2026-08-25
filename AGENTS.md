@@ -38,7 +38,7 @@ Before changing a module:
 - RabbitMQ carries durable business events. Redis is optional cache or ephemeral infrastructure.
 - Redis failure must not permit invalid bids, block otherwise valid authoritative bids, or duplicate payments.
 - Stripe state belongs only to settlement.
-- Authentication signs JWTs with HS256 using `JWT_SECRET`. Do not commit the secret or put it in the frontend. See [`docs/adr/0001-hs256-jwt-signing.md`](docs/adr/0001-hs256-jwt-signing.md).
+- Authentication signs JWTs with HS256 using `JWT_SECRET`. Do not commit the secret or put it in the frontend. See [`docs/adr/0001-hs256-jwt-signing.md`](docs/adr/0001-hs256-jwt-signing.md). Kong verifies JWTs at the edge; auction and settlement read trusted `X-User-Id` from Kong. See [`docs/adr/0002-kong-jwt-edge-identity.md`](docs/adr/0002-kong-jwt-edge-identity.md).
 - Stripe webhooks are the canonical source of final payment events.
 - Consumers ACK only after their database transaction commits.
 - Workers stop claiming new work on shutdown and finish or safely roll back in-flight work.
@@ -50,7 +50,7 @@ Before changing a module:
 
 Prove behavior through the running stack, not isolated helpers. Keep coverage small: one e2e test per meaningful contract or failure mode.
 
-**E2e only:** HTTP against real PostgreSQL, the real service process, and Kong for API routes.
+**E2e only:** HTTP against real PostgreSQL and the real service process. Until Kong exists (Phase 7), hit the owning service port and inject `X-User-Id` on protected routes. After Phase 7, API e2e goes through Kong with Bearer tokens.
 
 **Platform e2e (later):** browser flows through Kong once the frontend exists.
 

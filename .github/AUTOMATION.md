@@ -20,7 +20,7 @@ Workflows consume repository/environment secrets or federated credentials; sensi
 
 When workflows are introduced, they should avoid unrelated work:
 
-- `authentication/**` runs authentication e2e tests through Kong and affected gateway checks.
+- `authentication/**` runs authentication e2e tests (service port until Kong exists, then through Kong) and affected gateway checks.
 - `auction/**` runs auction e2e tests, concurrency scenarios, worker checks, and affected cross-module jobs.
 - `settlement/**` runs settlement e2e tests, Stripe-fixture scenarios, messaging checks, and affected cross-module jobs.
 - `frontend/**` runs TypeScript type checking and build; browser e2e when the UI exists.
@@ -29,7 +29,7 @@ When workflows are introduced, they should avoid unrelated work:
 
 Path filtering is an optimization, not permission to skip cross-module verification when a contract changes.
 
-CI should run e2e tests through Kong against owned PostgreSQL. Do not add unit or integration test jobs.
+CI should run e2e tests against owned PostgreSQL. Until Kong exists, hit the owning service port; after Phase 7, route API e2e through Kong. Do not add unit or integration test jobs.
 
 ## Delivery boundary
 

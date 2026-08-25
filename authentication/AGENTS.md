@@ -15,7 +15,7 @@ Read [`README.md`](README.md), the root [`AGENTS.md`](../AGENTS.md), and relevan
 
 ## Required e2e scenarios
 
-Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Prove these through HTTP via Kong to the running authentication service:
+Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Prove these through HTTP against the authentication service port until Kong exists, then through Kong:
 
 - Register returns 201 with id, email, and created_at; email stored lowercased
 - Duplicate email returns 409
@@ -25,4 +25,4 @@ Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Prove these through HTTP 
 
 ## Verification
 
-Run authentication e2e tests through Kong, Alembic upgrade from an empty database, and Ruff.
+Run authentication e2e tests against the service port until Kong exists (then through Kong), Alembic upgrade from an empty database, and Ruff.

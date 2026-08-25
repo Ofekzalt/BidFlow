@@ -30,4 +30,4 @@ Create an ADR when a meaningful architectural choice is made or changed. Include
 
 ## Current state
 
-The PRD and implementation plan are approved planning artifacts. [`adr/0001-hs256-jwt-signing.md`](adr/0001-hs256-jwt-signing.md) records the JWT signing choice.
+The PRD and implementation plan are approved planning artifacts. [`adr/0001-hs256-jwt-signing.md`](adr/0001-hs256-jwt-signing.md) records the JWT signing choice. [`adr/0002-kong-jwt-edge-identity.md`](adr/0002-kong-jwt-edge-identity.md) records Kong as the sole JWT verifier and trusted `X-User-Id` forwarding.
