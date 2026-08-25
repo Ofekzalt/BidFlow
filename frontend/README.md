@@ -28,7 +28,7 @@ Initial auction updates use polling every one or two seconds. WebSockets are opt
 
 ## Security
 
-Browser bundles are public. Never include JWT private keys, Stripe secret keys, webhook secrets, database credentials, or privileged service URLs. Stripe Elements uses only the publishable key.
+Browser bundles are public. Never include `JWT_SECRET`, Stripe secret keys, webhook secrets, database credentials, or privileged service URLs. Stripe Elements uses only the publishable key.
 
 ## Interacts with
 

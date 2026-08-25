@@ -6,7 +6,7 @@ Kong OSS edge-gateway configuration.
 
 - Client-to-service routing
 - Public and protected route policy
-- RS256 JWT verification using authentication's public key
+- HS256 JWT verification using `JWT_SECRET`
 - Correlation/request ID propagation
 - Rate limiting
 - Bounded retries for explicitly safe idempotent reads
@@ -39,7 +39,7 @@ Safe GET requests may use bounded gateway retries. Bid and payment writes rely o
 
 ## Key ownership
 
-Gateway receives only the RS256 public key. It must never receive a private key or shared secret capable of signing valid tokens.
+Gateway verifies HS256 tokens with `JWT_SECRET`. Do not commit the secret or place it in the frontend. See [`docs/adr/0001-hs256-jwt-signing.md`](../docs/adr/0001-hs256-jwt-signing.md).
 
 ## Current state
 

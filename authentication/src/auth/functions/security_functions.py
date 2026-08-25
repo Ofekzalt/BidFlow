@@ -1,5 +1,4 @@
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 import bcrypt
 import jwt
@@ -25,7 +24,6 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def create_access_token(user_id: str, email: str) -> str:
-    private_key = Path(settings.jwt_private_key_path).read_text()
     now = datetime.now(UTC)
     payload = {
         JWT_CLAIM_SUB: user_id,
@@ -35,4 +33,4 @@ def create_access_token(user_id: str, email: str) -> str:
         JWT_CLAIM_ISS: settings.jwt_issuer,
         JWT_CLAIM_AUD: settings.jwt_audience,
     }
-    return jwt.encode(payload, private_key, algorithm=JWT_ALGORITHM)
+    return jwt.encode(payload, settings.jwt_secret, algorithm=JWT_ALGORITHM)

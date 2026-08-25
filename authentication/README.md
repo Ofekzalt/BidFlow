@@ -6,7 +6,7 @@ The authentication bounded context for Live Auction Platform.
 
 - User registration and login
 - Email identity and password hashes
-- RS256 private signing key
+- HS256 signing secret
 - JWT issuance and token claims
 - Authentication PostgreSQL schema
 - Authentication SQLAlchemy models and Alembic migrations
@@ -25,9 +25,9 @@ Registration must remain available when Stripe, RabbitMQ, Redis, auction, or set
 Public HTTP endpoints (port `8001`):
 
 - `POST /auth/register` — body: `{ "email", "password" }`; returns `201` with id/email/created_at
-- `POST /auth/login` — body: `{ "email", "password" }`; returns `200` with RS256 `access_token`
+- `POST /auth/login` — body: `{ "email", "password" }`; returns `200` with HS256 `access_token`
 
-JWTs contain `sub` (user id), `email`, `iat`, `exp`, `iss`, `aud` and are signed only with authentication's RS256 private key. Kong receives the public key only.
+JWTs contain `sub` (user id), `email`, `iat`, `exp`, `iss`, `aud` and are signed with `JWT_SECRET`. See [`docs/adr/0001-hs256-jwt-signing.md`](../docs/adr/0001-hs256-jwt-signing.md).
 
 ## Data ownership
 
@@ -35,7 +35,7 @@ Authentication owns its PostgreSQL database and migration history under `alembic
 
 ## Interacts with
 
-- [`gateway/`](../gateway/README.md) — public route forwarding and public-key verification
+- [`gateway/`](../gateway/README.md) — public route forwarding and JWT verification
 - [`frontend/`](../frontend/README.md) — registration and login client
 - [`docs/`](../docs/README.md) — contracts and architectural decisions
 
@@ -53,34 +53,22 @@ From the repository root:
 docker compose up -d
 ```
 
-### 2. Generate RS256 keypair (once)
-
-```bash
-mkdir -p authentication/keys
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
-  -out authentication/keys/private.pem
-openssl rsa -in authentication/keys/private.pem -pubout \
-  -out authentication/keys/public.pem
-```
-
-`authentication/keys/` is gitignored. Never commit `private.pem`. The public key will be mounted into the gateway in Phase 7.
-
-### 3. Configure environment
+### 2. Configure environment
 
 ```bash
 cp .env.example .env   # run from authentication/
 ```
 
-Edit `DATABASE_URL` and `JWT_PRIVATE_KEY_PATH` to match your local paths.
+Set `DATABASE_URL` and `JWT_SECRET`. Never commit `JWT_SECRET`.
 
-### 4. Apply migrations
+### 3. Apply migrations
 
 ```bash
 cd authentication
 uv run alembic upgrade head
 ```
 
-### 5. Run the service
+### 4. Run the service
 
 ```bash
 cd authentication
@@ -89,4 +77,4 @@ uv run uvicorn auth.main:app --host 127.0.0.1 --port 8001 --reload
 
 ## Current state
 
-Application skeleton implemented: settings, async SQLAlchemy session, User model, Alembic migration, RS256 JWT helpers. Register and login routes not yet implemented.
+Application skeleton implemented: settings, async SQLAlchemy session, User model, Alembic migration, HS256 JWT helpers. Register and login routes not yet implemented.

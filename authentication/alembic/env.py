@@ -16,7 +16,7 @@ target_metadata = Base.metadata
 
 
 def _sync_url(async_url: str) -> str:
-    return re.sub(r"\+asyncpg", "", async_url)
+    return re.sub(r"\+asyncpg", "+psycopg", async_url)
 
 
 def run_migrations_offline() -> None:

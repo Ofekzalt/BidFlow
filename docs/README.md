@@ -30,4 +30,4 @@ Create an ADR when a meaningful architectural choice is made or changed. Include
 
 ## Current state
 
-The PRD and implementation plan are approved planning artifacts. ADRs and operational documentation have not yet been written.
+The PRD and implementation plan are approved planning artifacts. [`adr/0001-hs256-jwt-signing.md`](adr/0001-hs256-jwt-signing.md) records the JWT signing choice.
