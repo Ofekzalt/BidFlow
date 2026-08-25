@@ -19,7 +19,7 @@ Auction and bidding intentionally share one service because bid acceptance must 
 
 ## Does not own
 
-- Credentials or JWT signing
+- Credentials, JWT signing, or JWT verification
 - Stripe customers, payment methods, or PaymentIntents
 - Durable event transport configuration outside its own routing contracts
 - Authoritative payment-method state
@@ -29,6 +29,10 @@ Auction and bidding intentionally share one service because bid acceptance must 
 PostgreSQL determines whether a bid succeeds. Bid placement locks the auction row and performs only local database work. It must never call settlement or Redis while holding the lock.
 
 The local `bidder_payment_status` projection is eventually consistent. Unknown or untrusted eligibility fails closed. Settlement remains the source of payment-method truth.
+
+## Identity
+
+Protected routes read the authenticated user id from the Kong-provided `X-User-Id` header. Auction does not verify JWTs. Missing `X-User-Id` on a protected route returns `401`. Before Kong exists, e2e tests inject `X-User-Id` directly. See [`docs/adr/0002-kong-jwt-edge-identity.md`](../docs/adr/0002-kong-jwt-edge-identity.md).
 
 ## Lifecycle
 
@@ -63,6 +67,66 @@ Consumes:
 - [`settlement/`](../settlement/README.md) — asynchronous payment and eligibility events
 - [`frontend/`](../frontend/README.md) — auction browsing, creation, and bidding
 
+## Interfaces
+
+HTTP endpoints (port `8002`):
+
+- `POST /auctions` — seller creates `DRAFT`; requires `X-User-Id`
+- `PATCH /auctions/{id}` — seller only, `DRAFT` only
+- `POST /auctions/{id}/open` — seller opens `DRAFT → OPEN`
+- `GET /auctions`, `GET /auctions/{id}`, `GET /auctions/{id}/current-bid` — public reads
+
+Money is integer cents. `starting_price_cents` must be greater than 0. `start_time` must be before `end_time`. Missing `X-User-Id` on writes returns `401`. Non-seller writes return `403`. Edits after `OPEN` return `409`.
+
+## Data ownership
+
+Auction owns its PostgreSQL database and migration history under `alembic/`. No other service may query this database directly.
+
+## Local development
+
+### Prerequisites
+
+- Python 3.12+, [uv](https://docs.astral.sh/uv/), Docker
+
+### 1. Start Postgres
+
+From the repository root:
+
+```bash
+docker compose up -d
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env   # run from auction/
+```
+
+Set `DATABASE_URL`.
+
+### 3. Apply migrations
+
+```bash
+cd auction
+uv run alembic upgrade head
+```
+
+### 4. Run the service
+
+```bash
+cd auction
+uv run uvicorn auction.main:app --host 127.0.0.1 --port 8002 --reload
+```
+
+Protected writes need `X-User-Id` until Kong exists (Phase 7).
+
+### 5. Run e2e tests
+
+```bash
+cd auction
+uv run pytest tests/e2e/test_auction_lifecycle.py -v
+```
+
 ## Current state
 
-Folder scaffold only. The auction application and workers are not implemented.
+Phase 2 listings and lifecycle are implemented: create draft, seller edit while draft, open transition, public list/detail/current-bid. Bids, close worker, and messaging are not implemented.
