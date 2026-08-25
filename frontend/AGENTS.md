@@ -13,9 +13,8 @@ Read [`README.md`](README.md), root [`AGENTS.md`](../AGENTS.md), and relevant us
 - Do not add WebSockets or Redis Pub/Sub before all core acceptance criteria pass.
 - Handle explicit backend error codes for stale bids, idempotency conflicts, closed auctions, and missing payment eligibility.
 - Keep components focused; do not add a design-system abstraction for one use.
-- Add frontend tests for changed behavior and run type checking/build verification.
 - Do not modify backend modules for presentation-only concerns.
 
 ## Required verification
 
-Run frontend tests, TypeScript type checking, production build, and the gateway-only integration flow.
+Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Run TypeScript type checking and production build. Add browser e2e flows through Kong once the UI exists.

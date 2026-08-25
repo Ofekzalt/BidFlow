@@ -6,7 +6,7 @@ The authentication bounded context for Live Auction Platform.
 
 - User registration and login
 - Email identity and password hashes
-- RS256 private signing key
+- HS256 signing secret
 - JWT issuance and token claims
 - Authentication PostgreSQL schema
 - Authentication SQLAlchemy models and Alembic migrations
@@ -22,12 +22,12 @@ Registration must remain available when Stripe, RabbitMQ, Redis, auction, or set
 
 ## Interfaces
 
-Planned public HTTP endpoints:
+Public HTTP endpoints (port `8001`):
 
-- `POST /auth/register`
-- `POST /auth/login`
+- `POST /auth/register` — body: `{ "email", "password" }`; returns `201` with id/email/created_at
+- `POST /auth/login` — body: `{ "email", "password" }`; returns `200` with HS256 `access_token`
 
-JWTs contain the stable user ID in `sub` and are signed only with authentication's RS256 private key. Kong receives the public key only.
+JWTs contain `sub` (user id), `email`, `iat`, `exp`, `iss`, `aud` and are signed with `JWT_SECRET`. See [`docs/adr/0001-hs256-jwt-signing.md`](../docs/adr/0001-hs256-jwt-signing.md).
 
 ## Data ownership
 
@@ -35,10 +35,46 @@ Authentication owns its PostgreSQL database and migration history under `alembic
 
 ## Interacts with
 
-- [`gateway/`](../gateway/README.md) — public route forwarding and public-key verification
+- [`gateway/`](../gateway/README.md) — public route forwarding and JWT verification
 - [`frontend/`](../frontend/README.md) — registration and login client
 - [`docs/`](../docs/README.md) — contracts and architectural decisions
 
+## Local development
+
+### Prerequisites
+
+- Python 3.12+, [uv](https://docs.astral.sh/uv/), Docker
+
+### 1. Start Postgres
+
+From the repository root:
+
+```bash
+docker compose up -d
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env   # run from authentication/
+```
+
+Set `DATABASE_URL` and `JWT_SECRET`. Never commit `JWT_SECRET`.
+
+### 3. Apply migrations
+
+```bash
+cd authentication
+uv run alembic upgrade head
+```
+
+### 4. Run the service
+
+```bash
+cd authentication
+uv run uvicorn auth.main:app --host 127.0.0.1 --port 8001 --reload
+```
+
 ## Current state
 
-Folder scaffold only. No authentication application, database model, or migration exists yet.
+Application skeleton implemented: settings, async SQLAlchemy session, User model, Alembic migration, HS256 JWT helpers. Register and login routes not yet implemented.

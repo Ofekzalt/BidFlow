@@ -10,7 +10,7 @@ Three backend services own distinct business capabilities:
 
 ```text
 Kong gateway
-├── authentication  → users, credentials, RS256 JWTs
+├── authentication  → users, credentials, HS256 JWTs
 ├── auction         → listings, bids, concurrency, lifecycle
 └── settlement      → Stripe payment methods, payments, webhooks
 
@@ -26,7 +26,7 @@ Auction and bidding intentionally share one service and database because placing
 
 | Path | Owns |
 | --- | --- |
-| [`authentication/`](authentication/README.md) | Registration, password hashing, RS256 signing, JWT issuance |
+| [`authentication/`](authentication/README.md) | Registration, password hashing, HS256 signing, JWT issuance |
 | [`auction/`](auction/README.md) | Auctions, bids, lifecycle, PostgreSQL concurrency, local projections, workers |
 | [`settlement/`](settlement/README.md) | Stripe setup, PaymentIntents, webhooks, payment state, notifications |
 | [`frontend/`](frontend/README.md) | React, Vite, and TypeScript browser application |
@@ -59,6 +59,16 @@ Planned infrastructure:
 | Stripe test mode | SetupIntent, saved payment methods, off-session PaymentIntent, webhooks |
 | Prometheus and Grafana | Domain and reliability metrics |
 | Kong OSS | Edge gateway |
+
+## Local setup
+
+```bash
+docker compose up -d
+```
+
+Postgres initialises the three service databases automatically on first start via [`scripts/init-databases.sql`](scripts/init-databases.sql).
+
+Copy `.env.example` to `.env` and fill in values before starting any service.
 
 ## Current state
 

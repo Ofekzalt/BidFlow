@@ -20,14 +20,16 @@ Workflows consume repository/environment secrets or federated credentials; sensi
 
 When workflows are introduced, they should avoid unrelated work:
 
-- `authentication/**` runs authentication tests and affected integration tests.
-- `auction/**` runs auction, concurrency, worker, and affected integration tests.
-- `settlement/**` runs settlement, Stripe-fixture, messaging, and affected integration tests.
-- `frontend/**` runs TypeScript tests, type checking, and build.
-- `gateway/**` runs gateway policy/integration checks.
+- `authentication/**` runs authentication e2e tests through Kong and affected gateway checks.
+- `auction/**` runs auction e2e tests, concurrency scenarios, worker checks, and affected cross-module jobs.
+- `settlement/**` runs settlement e2e tests, Stripe-fixture scenarios, messaging checks, and affected cross-module jobs.
+- `frontend/**` runs TypeScript type checking and build; browser e2e when the UI exists.
+- `gateway/**` runs gateway e2e checks.
 - Shared contracts may intentionally run several jobs.
 
 Path filtering is an optimization, not permission to skip cross-module verification when a contract changes.
+
+CI should run e2e tests through Kong against owned PostgreSQL. Do not add unit or integration test jobs.
 
 ## Delivery boundary
 
