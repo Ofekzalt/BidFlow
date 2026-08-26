@@ -6,6 +6,8 @@ class Settings(BaseSettings):
 
     database_url: str
     auction_port: int = 8002
+    close_poll_interval_seconds: float = 2
+    close_batch_size: int = 50
 
 
 settings = Settings()

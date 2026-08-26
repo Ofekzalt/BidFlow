@@ -123,14 +123,25 @@ uv run uvicorn auction.main:app --host 127.0.0.1 --port 8002 --reload
 
 Protected writes need `X-User-Id` until Kong exists (Phase 7).
 
-### 5. Run e2e tests
+### 5. Run the close worker
+
+In a second terminal:
+
+```bash
+cd auction
+uv run python -m auction.workers.close_worker
+```
+
+The worker claims expired `OPEN` auctions with `FOR UPDATE SKIP LOCKED`, sets `UNSOLD` or `PAYMENT_PENDING`, and writes unpublished `AuctionEnded` outbox rows. RabbitMQ publishing is Phase 5.
+
+### 6. Run e2e tests
 
 ```bash
 cd auction
 uv run pytest tests/e2e -v
 ```
 
-E2e tests start uvicorn on port `8013` so they do not collide with a local server on `8002`.
+E2e tests start uvicorn on port `8013` so they do not collide with a local server on `8002`. Close-worker tests spawn `python -m auction.workers.close_worker`.
 
 Example bid (auction must be `OPEN`; bidder must have `payment_ready=true` in `bidder_payment_status`):
 
@@ -144,4 +155,4 @@ curl -sS -X POST "http://127.0.0.1:8002/auctions/$AUCTION_ID/bids" \
 
 ## Current state
 
-Phase 3 bidding and the local payment-eligibility projection are implemented: `POST /auctions/{id}/bids` with row locking and `Idempotency-Key`, `apply_payment_status` / `is_payment_ready`, and fail-closed eligibility. Close worker and RabbitMQ consumers are not implemented.
+Phase 4 close worker is implemented: expired `OPEN` auctions become `UNSOLD` or `PAYMENT_PENDING` with winner/final-amount snapshots, and winner-bearing closes write unpublished `AuctionEnded` outbox rows in the same transaction. RabbitMQ publishing and payment-result consumers are not implemented.

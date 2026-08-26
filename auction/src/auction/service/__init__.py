@@ -6,6 +6,7 @@ from auction.service.auction_service import (
     patch_auction,
 )
 from auction.service.bid_service import place_bid
+from auction.service.close_service import close_expired_batch
 from auction.service.payment_status_service import (
     apply_payment_status,
     is_payment_ready,
@@ -13,6 +14,7 @@ from auction.service.payment_status_service import (
 
 __all__ = [
     "apply_payment_status",
+    "close_expired_batch",
     "create_auction",
     "get_auction",
     "is_payment_ready",
