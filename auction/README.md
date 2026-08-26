@@ -74,9 +74,12 @@ HTTP endpoints (port `8002`):
 - `POST /auctions` — seller creates `DRAFT`; requires `X-User-Id`
 - `PATCH /auctions/{id}` — seller only, `DRAFT` only
 - `POST /auctions/{id}/open` — seller opens `DRAFT → OPEN`
+- `POST /auctions/{id}/bids` — bidder places a bid; requires `X-User-Id` and `Idempotency-Key`
 - `GET /auctions`, `GET /auctions/{id}`, `GET /auctions/{id}/current-bid` — public reads
 
-Money is integer cents. `starting_price_cents` must be greater than 0. `start_time` must be before `end_time`. Missing `X-User-Id` on writes returns `401`. Non-seller writes return `403`. Edits after `OPEN` return `409`.
+Money is integer cents. `starting_price_cents` must be greater than 0. `start_time` must be before `end_time`. Bid `amount_cents` must be greater than `current_price_cents`. Missing `X-User-Id` on writes returns `401`. Non-seller writes and ineligible bidders return `403`. Edits after `OPEN`, bids after close or on a non-open auction, and idempotency key reuse with a different body return `409`.
+
+Payment eligibility is the local `bidder_payment_status` projection. Unknown or `payment_ready=false` rejects the bid. Until Phase 5, seed that table (or call `apply_payment_status`) in tests. See [`docs/adr/0003-auction-payment-eligibility-projection.md`](../docs/adr/0003-auction-payment-eligibility-projection.md).
 
 ## Data ownership
 
@@ -124,9 +127,21 @@ Protected writes need `X-User-Id` until Kong exists (Phase 7).
 
 ```bash
 cd auction
-uv run pytest tests/e2e/test_auction_lifecycle.py -v
+uv run pytest tests/e2e -v
+```
+
+E2e tests start uvicorn on port `8013` so they do not collide with a local server on `8002`.
+
+Example bid (auction must be `OPEN`; bidder must have `payment_ready=true` in `bidder_payment_status`):
+
+```bash
+curl -sS -X POST "http://127.0.0.1:8002/auctions/$AUCTION_ID/bids" \
+  -H "Content-Type: application/json" \
+  -H "X-User-Id: $BIDDER_ID" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"amount_cents":1100}'
 ```
 
 ## Current state
 
-Phase 2 listings and lifecycle are implemented: create draft, seller edit while draft, open transition, public list/detail/current-bid. Bids, close worker, and messaging are not implemented.
+Phase 3 bidding and the local payment-eligibility projection are implemented: `POST /auctions/{id}/bids` with row locking and `Idempotency-Key`, `apply_payment_status` / `is_payment_ready`, and fail-closed eligibility. Close worker and RabbitMQ consumers are not implemented.
