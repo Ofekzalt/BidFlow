@@ -7,6 +7,7 @@ import auction.entity.auction_entity  # noqa: F401
 import auction.entity.bid_entity  # noqa: F401
 import auction.entity.bidder_payment_status_entity  # noqa: F401
 import auction.entity.idempotency_key_entity  # noqa: F401
+import auction.entity.outbox_event_entity  # noqa: F401
 import auction.entity.processed_event_entity  # noqa: F401
 from alembic import context
 from auction.config import Base, settings

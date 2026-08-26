@@ -73,7 +73,7 @@ def clear_auctions(auction_server: str) -> Iterator[None]:
         with conn.cursor() as cur:
             cur.execute(
                 "TRUNCATE TABLE auctions, bidder_payment_status, "
-                "processed_events, bids, idempotency_keys"
+                "processed_events, bids, idempotency_keys, outbox_events"
             )
         conn.commit()
     yield

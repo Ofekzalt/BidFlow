@@ -1,10 +1,10 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auction.constants import AUCTION_STATUS_DRAFT
+from auction.constants import AUCTION_STATUS_DRAFT, AUCTION_STATUS_OPEN
 from auction.entity import Auction
 
 
@@ -47,4 +47,19 @@ async def get_by_id(
 
 async def list_all(session: AsyncSession) -> list[Auction]:
     result = await session.execute(select(Auction).order_by(Auction.created_at.desc()))
+    return list[Auction](result.scalars().all())
+
+
+async def claim_expired_open(session: AsyncSession, limit: int) -> list[Auction]:
+    stmt = (
+        select(Auction)
+        .where(
+            Auction.status == AUCTION_STATUS_OPEN,
+            Auction.end_time <= func.now(),
+        )
+        .order_by(Auction.end_time)
+        .limit(limit)
+        .with_for_update(skip_locked=True)
+    )
+    result = await session.execute(stmt)
     return list[Auction](result.scalars().all())
