@@ -9,7 +9,7 @@ import psycopg
 import pytest
 
 AUCTION_ROOT = Path(__file__).resolve().parents[2]
-BASE_URL = "http://127.0.0.1:8002"
+BASE_URL = "http://127.0.0.1:8013"
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
     "postgresql+asyncpg://auction:auction@localhost:5432/auction",
@@ -36,7 +36,7 @@ def auction_server() -> Iterator[str]:
             "--host",
             "127.0.0.1",
             "--port",
-            "8002",
+            "8013",
         ],
         cwd=AUCTION_ROOT,
         env=env,
@@ -71,7 +71,10 @@ def clear_auctions(auction_server: str) -> Iterator[None]:
     dsn = _sync_dsn(DATABASE_URL)
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
-            cur.execute("TRUNCATE TABLE auctions")
+            cur.execute(
+                "TRUNCATE TABLE auctions, bidder_payment_status, "
+                "processed_events, bids, idempotency_keys"
+            )
         conn.commit()
     yield
 

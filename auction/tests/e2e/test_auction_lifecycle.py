@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 
-from auction.constants import USER_ID_HEADER
+from auction.constants import MAX_CENTS, USER_ID_HEADER
 
 
 def _auction_body(**overrides: object) -> dict:
@@ -25,6 +25,30 @@ def test_create_and_public_reads(client: httpx.Client) -> None:
 
     unauthorized = client.post("/auctions", json=_auction_body())
     assert unauthorized.status_code == 401
+
+    invalid_user = client.post(
+        "/auctions",
+        headers={USER_ID_HEADER: "not-a-uuid"},
+        json=_auction_body(),
+    )
+    assert invalid_user.status_code == 401
+
+    naive_times = client.post(
+        "/auctions",
+        headers=headers,
+        json=_auction_body(
+            start_time="2026-08-26T10:00:00",
+            end_time="2026-08-27T10:00:00",
+        ),
+    )
+    assert naive_times.status_code == 422
+
+    oversize_price = client.post(
+        "/auctions",
+        headers=headers,
+        json=_auction_body(starting_price_cents=MAX_CENTS + 1),
+    )
+    assert oversize_price.status_code == 422
 
     invalid = client.post(
         "/auctions",
