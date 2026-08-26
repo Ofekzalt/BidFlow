@@ -19,10 +19,13 @@ Read [`README.md`](README.md), root [`AGENTS.md`](../AGENTS.md), and the settlem
 - On shutdown, stop consuming/claiming and finish or safely roll back in-flight work.
 - Use explicit Stripe timeouts and bounded retries only where idempotency makes them safe.
 - Never log Stripe secrets, payment-method details, webhook secrets, or sensitive payloads.
+- Read authenticated user id from trusted `X-User-Id`; do not verify JWTs or hold `JWT_SECRET`.
+- Return `401` when `X-User-Id` is missing on protected routes.
+- Before Kong exists, e2e tests inject `X-User-Id` on the service port; after Phase 7, protected-route e2e goes through Kong.
 
 ## Required e2e scenarios
 
-Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Prove these through Kong with the real app, settlement PostgreSQL, Stripe test fixtures, and outbox:
+Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Prove these against the settlement service port with injected `X-User-Id` until Kong exists, then through Kong. Use the real app, settlement PostgreSQL, Stripe test fixtures, and outbox:
 
 - Lazy Customer creation and reuse
 - SetupIntent off-session configuration

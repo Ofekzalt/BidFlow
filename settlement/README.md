@@ -18,7 +18,7 @@ The Stripe payment and settlement bounded context.
 
 ## Does not own
 
-- User credentials or JWT issuance
+- User credentials, JWT issuance, or JWT verification
 - Auction state, winner selection, or bid acceptance
 - Recovery Checkout flows, Stripe Connect, payouts, or live payments
 
@@ -40,6 +40,10 @@ The PaymentIntent response may update internal payment state, but verified Strip
 ## Correctness
 
 One logical payment is allowed per auction. Protection layers include consumed-event idempotency, a unique payment-per-auction constraint, Stripe's auction-based idempotency key, and Stripe webhook-event deduplication.
+
+## Identity
+
+Protected routes read the authenticated user id from the Kong-provided `X-User-Id` header. Settlement does not verify JWTs. Missing `X-User-Id` on a protected route returns `401`. Before Kong exists, e2e tests inject `X-User-Id` directly. See [`docs/adr/0002-kong-jwt-edge-identity.md`](../docs/adr/0002-kong-jwt-edge-identity.md).
 
 ## Interacts with
 

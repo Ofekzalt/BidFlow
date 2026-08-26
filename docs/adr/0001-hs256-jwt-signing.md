@@ -25,5 +25,5 @@ Access tokens include `sub`, `email`, `iat`, `exp`, `iss`, and `aud`. Defaults: 
 - Authentication configuration uses `JWT_SECRET`, `JWT_ISSUER`, and `JWT_AUDIENCE` instead of `JWT_PRIVATE_KEY_PATH`.
 - Kong receives `JWT_SECRET` at runtime for verification only. Wire it through Compose or deployment environment variables; do not commit it, place it in the frontend, or store it in tracked gateway configuration.
 - Authentication and Kong must use the same `JWT_SECRET`, `JWT_ISSUER`, and `JWT_AUDIENCE` values.
-- Any process that holds `JWT_SECRET` can mint valid tokens. Limit distribution to authentication for signing and Kong for verification.
+- Any process that holds `JWT_SECRET` can mint valid tokens. Limit distribution to authentication for signing and Kong for verification. Auction and settlement do not receive `JWT_SECRET`. See [`0002-kong-jwt-edge-identity.md`](0002-kong-jwt-edge-identity.md).
 - Rotate the secret by changing `JWT_SECRET` and invalidating outstanding tokens.

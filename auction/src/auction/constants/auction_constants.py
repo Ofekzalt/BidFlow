@@ -1,0 +1,38 @@
+USER_ID_HEADER = "X-User-Id"
+ERROR_AUCTION_NOT_FOUND = "auction not found"
+ERROR_FORBIDDEN = "forbidden"
+ERROR_AUCTION_NOT_DRAFT = "auction is not a draft"
+ERROR_AUCTION_NOT_OPEN = "auction is not open"
+ERROR_AUCTION_ENDED = "auction has ended"
+ERROR_BID_TOO_LOW = "amount_cents must be greater than current price"
+ERROR_PAYMENT_NOT_READY = "payment method is not ready"
+ERROR_IDEMPOTENCY_MISMATCH = "idempotency key reuse with a different request"
+ERROR_STARTING_PRICE_POSITIVE = "starting_price_cents must be greater than 0"
+ERROR_START_BEFORE_END = "start_time must be before end_time"
+
+AUCTIONS_TABLE_NAME = "auctions"
+PROCESSED_EVENTS_TABLE_NAME = "processed_events"
+BIDDER_PAYMENT_STATUS_TABLE_NAME = "bidder_payment_status"
+BIDS_TABLE_NAME = "bids"
+IDEMPOTENCY_KEYS_TABLE_NAME = "idempotency_keys"
+AUCTION_ROUTER_PREFIX = "/auctions"
+IDEMPOTENCY_KEY_HEADER = "Idempotency-Key"
+
+TITLE_MAX_LENGTH = 255
+MAX_CENTS = 2_147_483_647
+
+AUCTION_STATUS_DRAFT = "DRAFT"
+AUCTION_STATUS_OPEN = "OPEN"
+AUCTION_STATUS_UNSOLD = "UNSOLD"
+AUCTION_STATUS_PAYMENT_PENDING = "PAYMENT_PENDING"
+AUCTION_STATUS_SOLD = "SOLD"
+AUCTION_STATUS_UNPAID = "UNPAID"
+
+AUCTION_STATUSES = (
+    AUCTION_STATUS_DRAFT,
+    AUCTION_STATUS_OPEN,
+    AUCTION_STATUS_UNSOLD,
+    AUCTION_STATUS_PAYMENT_PENDING,
+    AUCTION_STATUS_SOLD,
+    AUCTION_STATUS_UNPAID,
+)

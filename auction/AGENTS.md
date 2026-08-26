@@ -18,10 +18,13 @@ Read [`README.md`](README.md), root [`AGENTS.md`](../AGENTS.md), approved auctio
 - Consumers ACK only after commit and safely nack/rollback on failure.
 - Workers stop new claims during shutdown and finish or roll back in-flight work.
 - Redis is optional and must not affect correctness.
+- Read authenticated user id from trusted `X-User-Id`; do not verify JWTs or hold `JWT_SECRET`.
+- Return `401` when `X-User-Id` is missing on protected routes.
+- Before Kong exists, e2e tests inject `X-User-Id` on the service port; after Phase 7, protected-route e2e goes through Kong.
 
 ## Required e2e scenarios
 
-Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Prove these through Kong with the real app, auction PostgreSQL, and messaging fixtures:
+Follow root [`AGENTS.md`](../AGENTS.md) testing rules. Prove these against the auction service port with injected `X-User-Id` until Kong exists, then through Kong. Use the real app, auction PostgreSQL, and messaging fixtures:
 
 - Concurrent bids with no lost update
 - Fifty duplicate idempotent requests create one bid
