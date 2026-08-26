@@ -1,11 +1,12 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 from auction.constants import (
     ERROR_START_BEFORE_END,
     ERROR_STARTING_PRICE_POSITIVE,
+    MAX_CENTS,
     TITLE_MAX_LENGTH,
 )
 
@@ -13,9 +14,9 @@ from auction.constants import (
 class CreateAuctionRequest(BaseModel):
     title: str = Field(max_length=TITLE_MAX_LENGTH)
     description: str
-    starting_price_cents: int
-    start_time: datetime
-    end_time: datetime
+    starting_price_cents: int = Field(ge=1, le=MAX_CENTS)
+    start_time: AwareDatetime
+    end_time: AwareDatetime
 
     @model_validator(mode="after")
     def validate_price_and_times(self) -> "CreateAuctionRequest":
@@ -29,9 +30,9 @@ class CreateAuctionRequest(BaseModel):
 class PatchAuctionRequest(BaseModel):
     title: str | None = Field(default=None, max_length=TITLE_MAX_LENGTH)
     description: str | None = None
-    starting_price_cents: int | None = None
-    start_time: datetime | None = None
-    end_time: datetime | None = None
+    starting_price_cents: int | None = Field(default=None, ge=1, le=MAX_CENTS)
+    start_time: AwareDatetime | None = None
+    end_time: AwareDatetime | None = None
 
     @model_validator(mode="after")
     def validate_price(self) -> "PatchAuctionRequest":
@@ -68,3 +69,13 @@ class AuctionResponse(BaseModel):
 class CurrentBidResponse(BaseModel):
     amount_cents: int
     bidder_id: uuid.UUID | None
+
+
+class PlaceBidRequest(BaseModel):
+    amount_cents: int = Field(ge=1, le=MAX_CENTS)
+
+
+class BidResponse(BaseModel):
+    auction_id: uuid.UUID
+    bidder_id: uuid.UUID
+    amount_cents: int

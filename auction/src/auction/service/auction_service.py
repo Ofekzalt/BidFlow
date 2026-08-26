@@ -20,7 +20,7 @@ from auction.repository import create, get_by_id, list_all
 
 async def create_auction(
     session: AsyncSession,
-    seller_id: str,
+    seller_id: uuid.UUID,
     title: str,
     description: str,
     starting_price_cents: int,
@@ -29,7 +29,7 @@ async def create_auction(
 ) -> Auction:
     return await create(
         session,
-        uuid.UUID(seller_id),
+        seller_id,
         title,
         description,
         starting_price_cents,
@@ -38,8 +38,13 @@ async def create_auction(
     )
 
 
-async def get_auction(session: AsyncSession, auction_id: uuid.UUID) -> Auction:
-    auction = await get_by_id(session, auction_id)
+async def get_auction(
+    session: AsyncSession,
+    auction_id: uuid.UUID,
+    *,
+    for_update: bool = False,
+) -> Auction:
+    auction = await get_by_id(session, auction_id, for_update=for_update)
     if auction is None:
         raise AuctionNotFoundError()
     return auction
@@ -49,8 +54,8 @@ async def list_auctions(session: AsyncSession) -> list[Auction]:
     return await list_all(session)
 
 
-def _require_seller(auction: Auction, seller_id: str) -> None:
-    if auction.seller_id != uuid.UUID(seller_id):
+def _require_seller(auction: Auction, seller_id: uuid.UUID) -> None:
+    if auction.seller_id != seller_id:
         raise ForbiddenError()
 
 
@@ -62,7 +67,7 @@ def _require_draft(auction: Auction) -> None:
 async def patch_auction(
     session: AsyncSession,
     auction_id: uuid.UUID,
-    seller_id: str,
+    seller_id: uuid.UUID,
     title: str | None,
     description: str | None,
     starting_price_cents: int | None,
@@ -93,7 +98,7 @@ async def patch_auction(
 async def open_auction(
     session: AsyncSession,
     auction_id: uuid.UUID,
-    seller_id: str,
+    seller_id: uuid.UUID,
 ) -> Auction:
     auction = await get_auction(session, auction_id)
     _require_seller(auction, seller_id)

@@ -32,8 +32,16 @@ async def create(
     return auction
 
 
-async def get_by_id(session: AsyncSession, auction_id: uuid.UUID) -> Auction | None:
-    result = await session.execute(select(Auction).where(Auction.id == auction_id))
+async def get_by_id(
+    session: AsyncSession,
+    auction_id: uuid.UUID,
+    *,
+    for_update: bool = False,
+) -> Auction | None:
+    stmt = select(Auction).where(Auction.id == auction_id)
+    if for_update:
+        stmt = stmt.with_for_update()
+    result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 
