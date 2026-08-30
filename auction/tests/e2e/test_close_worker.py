@@ -2,6 +2,7 @@ import asyncio
 import os
 import signal
 import subprocess
+import sys
 import time
 import uuid
 from collections.abc import Iterator
@@ -144,7 +145,7 @@ def _start_worker(*, batch_size: int = 50) -> subprocess.Popen[bytes]:
         "CLOSE_BATCH_SIZE": str(batch_size),
     }
     process = subprocess.Popen(
-        ["uv", "run", "python", "-m", "auction.workers.close_worker"],
+        [sys.executable, "-m", "auction.workers.close_worker"],
         cwd=AUCTION_ROOT,
         env=env,
         stdout=subprocess.DEVNULL,
