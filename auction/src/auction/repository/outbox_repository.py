@@ -26,9 +26,7 @@ async def insert_outbox(
     return event
 
 
-async def claim_unpublished(
-    session: AsyncSession, limit: int
-) -> list[OutboxEvent]:
+async def claim_unpublished(session: AsyncSession, limit: int) -> list[OutboxEvent]:
     stmt = (
         select(OutboxEvent)
         .where(OutboxEvent.published_at.is_(None))

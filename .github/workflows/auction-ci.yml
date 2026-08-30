@@ -1,0 +1,28 @@
+name: auction-ci
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - auction/**
+      - docker-compose.yml
+      - scripts/init-databases.sql
+      - .github/workflows/**
+
+concurrency:
+  group: auction-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/reusable-python-service.yml
+    with:
+      working-directory: auction
+      run-tests: true
+      needs-rabbitmq: true
+      run-migrations: true
+      database-url: postgresql+asyncpg://auction:auction@localhost:5432/auction
+      rabbitmq-url: amqp://guest:guest@localhost:5672/

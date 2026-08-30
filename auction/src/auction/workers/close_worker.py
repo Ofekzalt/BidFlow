@@ -37,6 +37,7 @@ async def run() -> None:
 
 def main() -> None:
     asyncio.run(run())
+    raise SystemExit(0)
 
 
 if __name__ == "__main__":

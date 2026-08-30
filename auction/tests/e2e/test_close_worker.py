@@ -2,10 +2,12 @@ import asyncio
 import os
 import signal
 import subprocess
+import sys
 import time
 import uuid
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import httpx
 import psycopg
@@ -14,9 +16,10 @@ import pytest
 from auction.config.settings import settings
 from auction.constants import USER_ID_HEADER
 from auction.service import apply_payment_status
-from tests.conftest import AUCTION_ROOT, DATABASE_URL
+from tests.conftest import DATABASE_URL
 
 IDEMPOTENCY_KEY_HEADER = "Idempotency-Key"
+AUCTION_SERVICE_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _sync_dsn() -> str:
@@ -139,13 +142,13 @@ def _start_worker(*, batch_size: int = 50) -> subprocess.Popen[bytes]:
     env = {
         **os.environ,
         "DATABASE_URL": DATABASE_URL,
-        "PYTHONPATH": str(AUCTION_ROOT / "src"),
+        "PYTHONPATH": str(AUCTION_SERVICE_ROOT / "src"),
         "CLOSE_POLL_INTERVAL_SECONDS": "0.2",
         "CLOSE_BATCH_SIZE": str(batch_size),
     }
     process = subprocess.Popen(
-        ["uv", "run", "python", "-m", "auction.workers.close_worker"],
-        cwd=AUCTION_ROOT,
+        [sys.executable, "-m", "auction.workers.close_worker"],
+        cwd=AUCTION_SERVICE_ROOT,
         env=env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -321,7 +324,7 @@ def test_two_close_workers_claim_each_auction_once(client: httpx.Client) -> None
 
 def test_close_worker_exits_on_sigterm() -> None:
     process = _start_worker()
-    time.sleep(0.4)
+    time.sleep(1.0)
     assert process.poll() is None
     process.send_signal(signal.SIGTERM)
     assert process.wait(timeout=5) == 0
