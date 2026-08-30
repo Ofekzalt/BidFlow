@@ -51,6 +51,65 @@ Protected routes read the authenticated user id from the Kong-provided `X-User-I
 - [`gateway/`](../gateway/README.md) — payment setup routes and public webhook forwarding
 - [`frontend/`](../frontend/README.md) — Stripe Elements setup and payment outcome
 
+## Local development
+
+### Prerequisites
+
+- Python 3.12+, [uv](https://docs.astral.sh/uv/), Docker
+
+### 1. Start Postgres and RabbitMQ
+
+From the repository root:
+
+```bash
+docker compose up -d
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env   # run from settlement/
+```
+
+Set `DATABASE_URL`.
+
+### 3. Apply migrations
+
+```bash
+cd settlement
+uv run alembic upgrade head
+```
+
+### 4. Run the service
+
+```bash
+cd settlement
+uv run uvicorn settlement.main:app --host 127.0.0.1 --port 8003 --reload
+```
+
+### 5. Run messaging workers
+
+```bash
+cd settlement
+uv run python -m settlement.workers.outbox_worker
+```
+
+```bash
+cd settlement
+uv run python -m settlement.workers.auction_ended_consumer
+```
+
+The outbox worker publishes seeded (and later Stripe-driven) outbox rows. The `AuctionEnded` consumer records `processed_events` and ACKs after commit; it does not create payments yet.
+
+### 6. Run e2e tests
+
+```bash
+cd settlement
+uv run pytest tests/e2e -v
+```
+
+E2e tests start uvicorn on port `8014` so they do not collide with a local server on `8003`.
+
 ## Current state
 
-Folder scaffold only. No Stripe or settlement behavior is implemented.
+Settlement FastAPI shell, Alembic `outbox_events` / `processed_events`, duplicated messaging adapters, outbox publisher, and a no-op `AuctionEnded` consumer are implemented. Stripe customers, payment methods, PaymentIntents, and webhooks are not implemented. See [`docs/adr/0004-transactional-outbox-and-retry-headers.md`](../docs/adr/0004-transactional-outbox-and-retry-headers.md).
