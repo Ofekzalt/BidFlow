@@ -79,7 +79,7 @@ HTTP endpoints (port `8002`):
 
 Money is integer cents. `starting_price_cents` must be greater than 0. `start_time` must be before `end_time`. Bid `amount_cents` must be greater than `current_price_cents`. Missing `X-User-Id` on writes returns `401`. Non-seller writes and ineligible bidders return `403`. Edits after `OPEN`, bids after close or on a non-open auction, and idempotency key reuse with a different body return `409`.
 
-Payment eligibility is the local `bidder_payment_status` projection. Unknown or `payment_ready=false` rejects the bid. Until Phase 5, seed that table (or call `apply_payment_status`) in tests. See [`docs/adr/0003-auction-payment-eligibility-projection.md`](../docs/adr/0003-auction-payment-eligibility-projection.md).
+Payment eligibility is the local `bidder_payment_status` projection. Unknown or `payment_ready=false` rejects the bid. The eligibility consumer applies `PaymentMethodReady` / `PaymentMethodRemoved` from RabbitMQ via `apply_payment_status`. Tests may still seed the table or publish those events on the bus. See [`docs/adr/0003-auction-payment-eligibility-projection.md`](../docs/adr/0003-auction-payment-eligibility-projection.md) and [`docs/adr/0004-transactional-outbox-and-retry-headers.md`](../docs/adr/0004-transactional-outbox-and-retry-headers.md).
 
 ## Data ownership
 
@@ -132,9 +132,25 @@ cd auction
 uv run python -m auction.workers.close_worker
 ```
 
-The worker claims expired `OPEN` auctions with `FOR UPDATE SKIP LOCKED`, sets `UNSOLD` or `PAYMENT_PENDING`, and writes unpublished `AuctionEnded` outbox rows. RabbitMQ publishing is Phase 5.
+The worker claims expired `OPEN` auctions with `FOR UPDATE SKIP LOCKED`, sets `UNSOLD` or `PAYMENT_PENDING`, and writes unpublished `AuctionEnded` outbox rows.
 
-### 6. Run e2e tests
+### 6. Run the outbox publisher and eligibility consumer
+
+With RabbitMQ running (`docker compose up -d` from the repository root):
+
+```bash
+cd auction
+uv run python -m auction.workers.outbox_worker
+```
+
+```bash
+cd auction
+uv run python -m auction.workers.eligibility_consumer
+```
+
+The outbox worker publishes unpublished `AuctionEnded` rows after broker confirm. The eligibility consumer applies payment-method events and ACKs after commit.
+
+### 7. Run e2e tests
 
 ```bash
 cd auction
@@ -155,4 +171,4 @@ curl -sS -X POST "http://127.0.0.1:8002/auctions/$AUCTION_ID/bids" \
 
 ## Current state
 
-Phase 4 close worker is implemented: expired `OPEN` auctions become `UNSOLD` or `PAYMENT_PENDING` with winner/final-amount snapshots, and winner-bearing closes write unpublished `AuctionEnded` outbox rows in the same transaction. RabbitMQ publishing and payment-result consumers are not implemented.
+Close worker, outbox publisher, and eligibility consumer are implemented. Expired `OPEN` auctions become `UNSOLD` or `PAYMENT_PENDING` with winner/final-amount snapshots; winner-bearing closes write `AuctionEnded` outbox rows in the same transaction, then the outbox worker publishes after broker confirm. Payment-method events update the local projection over RabbitMQ. Payment-result consumers and Stripe are not implemented.
