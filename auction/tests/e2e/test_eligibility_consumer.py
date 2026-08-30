@@ -113,9 +113,7 @@ def test_eligibility_consumer_applies_payment_method_events(
     seller_id = str(uuid.uuid4())
     bidder_id = str(uuid.uuid4())
     auction_id = _create_open_auction(client, seller_id)
-    rejected = _bid(
-        client, auction_id, bidder_id, 1100, str(uuid.uuid4())
-    )
+    rejected = _bid(client, auction_id, bidder_id, 1100, str(uuid.uuid4()))
     assert rejected.status_code == 403
 
     ready_event = uuid.uuid4()

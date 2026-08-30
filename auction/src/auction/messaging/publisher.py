@@ -10,9 +10,7 @@ from auction.messaging.envelope import build_envelope
 from auction.messaging.topology import routing_key_for
 
 
-async def publish_outbox_event(
-    channel: AbstractChannel, event: OutboxEvent
-) -> None:
+async def publish_outbox_event(channel: AbstractChannel, event: OutboxEvent) -> None:
     occurred_at = event.created_at.isoformat()
     envelope = build_envelope(
         event_id=str(event.id),

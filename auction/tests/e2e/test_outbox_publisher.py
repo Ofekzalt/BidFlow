@@ -106,8 +106,7 @@ def _compose(*args: str) -> None:
     )
     if result.returncode != 0:
         raise AssertionError(
-            f"docker compose {' '.join(args)} failed: "
-            f"{result.stderr or result.stdout}"
+            f"docker compose {' '.join(args)} failed: {result.stderr or result.stdout}"
         )
 
 

@@ -1,0 +1,24 @@
+name: authentication-ci
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - authentication/**
+      - docker-compose.yml
+      - scripts/init-databases.sql
+      - .github/workflows/**
+
+concurrency:
+  group: authentication-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/reusable-python-service.yml
+    with:
+      working-directory: authentication
+      run-tests: false

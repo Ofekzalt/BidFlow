@@ -41,4 +41,10 @@ Every pull request uses [`pull_request_template.md`](pull_request_template.md). 
 
 ## Current state
 
-The pull request template and module guidance provide baseline governance. Concrete CI workflows and ownership enforcement are not implemented yet.
+The pull request template and module guidance provide baseline governance. Per-service CI workflows validate pull requests to `main`:
+
+- `authentication-ci` — Ruff format and lint (e2e tests pending)
+- `auction-ci` — Ruff, Alembic upgrade, e2e tests against Postgres and RabbitMQ
+- `settlement-ci` — Ruff, e2e tests against Postgres and RabbitMQ
+
+Workflows are path-filtered and documented in [`workflows/README.md`](workflows/README.md). Frontend and gateway jobs are not implemented yet.

@@ -1,0 +1,91 @@
+name: Reusable Python Service CI
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      run-tests:
+        required: false
+        type: boolean
+        default: false
+      needs-rabbitmq:
+        required: false
+        type: boolean
+        default: false
+      run-migrations:
+        required: false
+        type: boolean
+        default: false
+      database-url:
+        required: false
+        type: string
+        default: ""
+      rabbitmq-url:
+        required: false
+        type: string
+        default: amqp://guest:guest@localhost:5672/
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Start infrastructure
+        if: inputs.run-tests
+        working-directory: .
+        run: |
+          services="postgres"
+          if [ "${{ inputs.needs-rabbitmq }}" = "true" ]; then
+            services="$services rabbitmq"
+          fi
+          docker compose up -d $services
+          for i in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -U postgres >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+          docker compose exec -T postgres pg_isready -U postgres
+          if [ "${{ inputs.needs-rabbitmq }}" = "true" ]; then
+            for i in $(seq 1 30); do
+              if docker compose exec -T rabbitmq rabbitmq-diagnostics -q ping >/dev/null 2>&1; then
+                break
+              fi
+              sleep 2
+            done
+            docker compose exec -T rabbitmq rabbitmq-diagnostics -q ping
+          fi
+
+      - name: Ruff format
+        run: uv run ruff format --check .
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Apply migrations
+        if: inputs.run-migrations
+        run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: ${{ inputs.database-url }}
+
+      - name: E2e tests
+        if: inputs.run-tests
+        run: uv run pytest tests/e2e -v
+        env:
+          DATABASE_URL: ${{ inputs.database-url }}
+          RABBITMQ_URL: ${{ inputs.rabbitmq-url }}

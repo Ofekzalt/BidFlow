@@ -6,9 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from settlement.entity.outbox_event_entity import OutboxEvent
 
 
-async def claim_unpublished(
-    session: AsyncSession, limit: int
-) -> list[OutboxEvent]:
+async def claim_unpublished(session: AsyncSession, limit: int) -> list[OutboxEvent]:
     stmt = (
         select(OutboxEvent)
         .where(OutboxEvent.published_at.is_(None))
