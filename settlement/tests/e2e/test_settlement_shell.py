@@ -87,3 +87,54 @@ def test_settlement_shell(settlement_server: str) -> None:
         sock.sendall(b"AMQP\x00\x00\x09\x01")
         greeting = sock.recv(8)
     assert greeting
+
+
+CORE_TABLES = (
+    "notifications",
+    "payment_methods",
+    "payments",
+    "stripe_customers",
+    "stripe_webhook_events",
+)
+
+
+def test_settlement_core_schema(settlement_schema: None) -> None:
+    dsn = _sync_dsn(DATABASE_URL)
+    with psycopg.connect(dsn) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT table_name FROM information_schema.tables
+                WHERE table_schema = 'public'
+                  AND table_name = ANY(%s)
+                ORDER BY table_name
+                """,
+                [list(CORE_TABLES)],
+            )
+            tables = [row[0] for row in cur.fetchall()]
+    assert tables == list(CORE_TABLES)
+
+    with psycopg.connect(dsn) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT 1
+                FROM pg_constraint
+                WHERE conrelid = 'payments'::regclass
+                  AND contype = 'u'
+                  AND conname = 'payments_auction_id_key'
+                """
+            )
+            auction_id_unique = cur.fetchone()
+            cur.execute(
+                """
+                SELECT 1
+                FROM pg_constraint
+                WHERE conrelid = 'stripe_customers'::regclass
+                  AND contype = 'u'
+                  AND conname = 'stripe_customers_stripe_customer_id_key'
+                """
+            )
+            customer_id_unique = cur.fetchone()
+    assert auction_id_unique is not None
+    assert customer_id_unique is not None
