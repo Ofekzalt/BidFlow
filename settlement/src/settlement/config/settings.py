@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,8 +7,8 @@ class Settings(BaseSettings):
 
     database_url: str
     settlement_port: int = 8003
-    stripe_secret_key: str = ""
-    stripe_webhook_secret: str = ""
+    stripe_secret_key: str = Field(min_length=1)
+    stripe_webhook_secret: str = Field(min_length=1)
     stripe_api_base: str | None = None
     rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"
     rabbitmq_retry_delays: str = "5,30,120"

@@ -71,7 +71,7 @@ docker compose up -d
 cp .env.example .env   # run from settlement/
 ```
 
-Set `DATABASE_URL`.
+Set `DATABASE_URL`. Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` to Stripe test values (or the placeholders in `.env.example` when using a local HTTP stub via `STRIPE_API_BASE`). Do not commit live keys.
 
 ### 3. Apply migrations
 
@@ -99,7 +99,9 @@ cd settlement
 uv run python -m settlement.workers.auction_ended_consumer
 ```
 
-The outbox worker publishes seeded (and later Stripe-driven) outbox rows. The `AuctionEnded` consumer records `processed_events` and ACKs after commit; it does not create payments yet.
+The outbox worker publishes unpublished outbox rows after broker confirm. The `AuctionEnded` consumer records `processed_events`, creates one payment per auction, and confirms an off-session PaymentIntent. It does not write `PaymentSucceeded` / `PaymentFailed` from the PaymentIntent response.
+
+Webhook requests use `Stripe-Signature` only. Protected payment routes inject `X-User-Id` until Kong exists.
 
 ### 6. Run e2e tests
 
@@ -108,8 +110,8 @@ cd settlement
 uv run pytest tests/e2e -v
 ```
 
-E2e tests start uvicorn on port `8014` so they do not collide with a local server on `8003`.
+E2e tests start uvicorn on dedicated ports so they do not collide with a local server on `8003`.
 
 ## Current state
 
-Settlement FastAPI shell, Alembic `outbox_events` / `processed_events`, duplicated messaging adapters, outbox publisher, and a no-op `AuctionEnded` consumer are implemented. Stripe customers, payment methods, PaymentIntents, and webhooks are not implemented. See [`docs/adr/0004-transactional-outbox-and-retry-headers.md`](../docs/adr/0004-transactional-outbox-and-retry-headers.md).
+Lazy Stripe Customer creation, off-session SetupIntents, payment-method attach/remove with outbox events, off-session PaymentIntents on `AuctionEnded`, verified Stripe webhooks, in-app notifications, and `GET /notifications` are implemented. Stripe Elements confirmation remains Phase 7. See [`docs/adr/0005-off-session-paymentintent.md`](../docs/adr/0005-off-session-paymentintent.md) and [`docs/adr/0006-lazy-stripe-customer.md`](../docs/adr/0006-lazy-stripe-customer.md).

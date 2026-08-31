@@ -25,6 +25,8 @@ def _database_url() -> str:
 
 DATABASE_URL = _database_url()
 os.environ["DATABASE_URL"] = DATABASE_URL
+os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_placeholder")
+os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_placeholder")
 
 
 @pytest.fixture(scope="session")
