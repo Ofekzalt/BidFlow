@@ -134,7 +134,7 @@ uv run python -m auction.workers.close_worker
 
 The worker claims expired `OPEN` auctions with `FOR UPDATE SKIP LOCKED`, sets `UNSOLD` or `PAYMENT_PENDING`, and writes unpublished `AuctionEnded` outbox rows.
 
-### 6. Run the outbox publisher and eligibility consumer
+### 6. Run the outbox publisher and consumers
 
 With RabbitMQ running (`docker compose up -d` from the repository root):
 
@@ -148,7 +148,12 @@ cd auction
 uv run python -m auction.workers.eligibility_consumer
 ```
 
-The outbox worker publishes unpublished `AuctionEnded` rows after broker confirm. The eligibility consumer applies payment-method events and ACKs after commit.
+```bash
+cd auction
+uv run python -m auction.workers.payment_result_consumer
+```
+
+The outbox worker publishes unpublished `AuctionEnded` rows after broker confirm. The eligibility consumer applies payment-method events and ACKs after commit. The payment-result consumer applies `PaymentSucceeded` / `PaymentFailed` only while the auction is `PAYMENT_PENDING`.
 
 ### 7. Run e2e tests
 
@@ -171,4 +176,4 @@ curl -sS -X POST "http://127.0.0.1:8002/auctions/$AUCTION_ID/bids" \
 
 ## Current state
 
-Close worker, outbox publisher, and eligibility consumer are implemented. Expired `OPEN` auctions become `UNSOLD` or `PAYMENT_PENDING` with winner/final-amount snapshots; winner-bearing closes write `AuctionEnded` outbox rows in the same transaction, then the outbox worker publishes after broker confirm. Payment-method events update the local projection over RabbitMQ. Payment-result consumers and Stripe are not implemented.
+Close worker, outbox publisher, eligibility consumer, and payment-result consumer are implemented. Expired `OPEN` auctions become `UNSOLD` or `PAYMENT_PENDING` with winner/final-amount snapshots; winner-bearing closes write `AuctionEnded` outbox rows in the same transaction, then the outbox worker publishes after broker confirm. Payment-method events update the local projection over RabbitMQ. `PaymentSucceeded` and `PaymentFailed` apply only while `PAYMENT_PENDING` (`SOLD` / `UNPAID`) and do not change snapshot fields. Stripe stays in settlement.

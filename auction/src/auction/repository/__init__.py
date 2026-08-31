@@ -1,4 +1,5 @@
 from auction.repository.auction_repository import (
+    apply_payment_result_if_pending,
     claim_expired_open,
     create,
     get_by_id,
@@ -17,6 +18,7 @@ from auction.repository.payment_status_repository import (
 )
 
 __all__ = [
+    "apply_payment_result_if_pending",
     "claim_expired_open",
     "create",
     "get_by_id",
