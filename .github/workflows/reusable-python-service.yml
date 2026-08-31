@@ -82,6 +82,8 @@ jobs:
         run: uv run alembic upgrade head
         env:
           DATABASE_URL: ${{ inputs.database-url }}
+          STRIPE_SECRET_KEY: sk_test_placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_placeholder
 
       - name: E2e tests
         if: inputs.run-tests
@@ -89,3 +91,6 @@ jobs:
         env:
           DATABASE_URL: ${{ inputs.database-url }}
           RABBITMQ_URL: ${{ inputs.rabbitmq-url }}
+          STRIPE_SECRET_KEY: sk_test_placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_placeholder
+          STRIPE_API_BASE: http://127.0.0.1:1

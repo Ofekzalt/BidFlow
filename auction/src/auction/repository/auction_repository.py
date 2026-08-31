@@ -1,10 +1,14 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auction.constants import AUCTION_STATUS_DRAFT, AUCTION_STATUS_OPEN
+from auction.constants import (
+    AUCTION_STATUS_DRAFT,
+    AUCTION_STATUS_OPEN,
+    AUCTION_STATUS_PAYMENT_PENDING,
+)
 from auction.entity import Auction
 
 
@@ -63,3 +67,17 @@ async def claim_expired_open(session: AsyncSession, limit: int) -> list[Auction]
     )
     result = await session.execute(stmt)
     return list[Auction](result.scalars().all())
+
+
+async def apply_payment_result_if_pending(
+    session: AsyncSession, auction_id: uuid.UUID, status: str
+) -> None:
+    stmt = (
+        update(Auction)
+        .where(
+            Auction.id == auction_id,
+            Auction.status == AUCTION_STATUS_PAYMENT_PENDING,
+        )
+        .values(status=status)
+    )
+    await session.execute(stmt)

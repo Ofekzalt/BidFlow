@@ -6,12 +6,15 @@ from aio_pika.abc import AbstractChannel, AbstractIncomingMessage
 
 from auction.config import SessionLocal, settings
 from auction.constants import (
+    EVENT_TYPE_PAYMENT_FAILED,
     EVENT_TYPE_PAYMENT_METHOD_READY,
     EVENT_TYPE_PAYMENT_METHOD_REMOVED,
+    EVENT_TYPE_PAYMENT_SUCCEEDED,
     QUEUE_PAYMENT_METHOD,
+    QUEUE_PAYMENT_RESULT,
 )
 from auction.messaging.retry import retry_or_dead_letter
-from auction.service import apply_payment_status
+from auction.service import apply_payment_result, apply_payment_status
 
 
 def parse_payment_method_event(
@@ -55,6 +58,48 @@ async def handle_payment_method_message(
             channel,
             message,
             queue_name=QUEUE_PAYMENT_METHOD,
+            error=exc,
+            retry_delays=settings.rabbitmq_retry_delays,
+        )
+
+
+def parse_payment_result_event(
+    body: dict[str, Any],
+) -> tuple[uuid.UUID, uuid.UUID, str]:
+    event_type = body["event_type"]
+    if event_type not in {
+        EVENT_TYPE_PAYMENT_SUCCEEDED,
+        EVENT_TYPE_PAYMENT_FAILED,
+    }:
+        raise ValueError(f"unsupported event type {event_type}")
+    payload = body["payload"]
+    return (
+        uuid.UUID(body["event_id"]),
+        uuid.UUID(payload["auction_id"]),
+        event_type,
+    )
+
+
+async def handle_payment_result_message(
+    channel: AbstractChannel, message: AbstractIncomingMessage
+) -> None:
+    try:
+        event_id, auction_id, event_type = parse_payment_result_event(
+            json.loads(message.body)
+        )
+        async with SessionLocal() as session:
+            try:
+                await apply_payment_result(session, event_id, auction_id, event_type)
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+        await message.ack()
+    except Exception as exc:
+        await retry_or_dead_letter(
+            channel,
+            message,
+            queue_name=QUEUE_PAYMENT_RESULT,
             error=exc,
             retry_delays=settings.rabbitmq_retry_delays,
         )

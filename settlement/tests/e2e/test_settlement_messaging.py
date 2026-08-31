@@ -36,6 +36,8 @@ def _start_worker(module: str) -> subprocess.Popen[bytes]:
         "OUTBOX_POLL_INTERVAL_SECONDS": "0.2",
         "OUTBOX_BATCH_SIZE": "50",
         "RABBITMQ_RETRY_DELAYS": "0.2,0.2,0.2",
+        "STRIPE_SECRET_KEY": "sk_test_placeholder",
+        "STRIPE_WEBHOOK_SECRET": "whsec_placeholder",
     }
     return subprocess.Popen(
         ["uv", "run", "python", "-m", module],

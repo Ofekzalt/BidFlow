@@ -3,8 +3,13 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
+import settlement.entity.notification_entity  # noqa: F401
 import settlement.entity.outbox_event_entity  # noqa: F401
+import settlement.entity.payment_entity  # noqa: F401
+import settlement.entity.payment_method_entity  # noqa: F401
 import settlement.entity.processed_event_entity  # noqa: F401
+import settlement.entity.stripe_customer_entity  # noqa: F401
+import settlement.entity.stripe_webhook_event_entity  # noqa: F401
 from alembic import context
 from settlement.config import Base, settings
 
