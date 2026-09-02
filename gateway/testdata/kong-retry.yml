@@ -1,0 +1,35 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: retry-get
+    url: http://request-counter:8080
+    retries: 2
+    routes:
+      - name: retry-get
+        paths:
+          - /retry-get
+        methods:
+          - GET
+        strip_path: true
+  - name: retry-post
+    url: http://request-counter:8080
+    retries: 0
+    routes:
+      - name: retry-post
+        paths:
+          - /retry-post
+        methods:
+          - POST
+        strip_path: true
+  - name: retry-admin
+    url: http://request-counter:8080
+    retries: 0
+    routes:
+      - name: retry-admin
+        paths:
+          - /reset
+          - /count
+        methods:
+          - GET
+        strip_path: false

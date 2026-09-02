@@ -54,6 +54,14 @@ Safe GET requests may use bounded gateway retries. Bid and payment writes rely o
 
 Gateway verifies HS256 tokens with `JWT_SECRET`. Do not commit the secret or place it in the frontend. See [`docs/adr/0001-hs256-jwt-signing.md`](../docs/adr/0001-hs256-jwt-signing.md).
 
+## Rate limiting
+
+Global, in-memory (`policy: local`), **30 requests per second** and **200 per minute** per client IP. Redis is not used. Compose runs Kong with a single worker so local counters are not split across processes.
+
 ## Current state
 
-Folder scaffold only. Kong configuration is not implemented.
+Declarative Kong 3.9 config in [`kong.yml`](kong.yml) is wired through Docker Compose. The proxy is published at `http://localhost:8080`. Authentication, auction, and settlement listen only on the Compose network.
+
+`JWT_SECRET` is injected at container start from the environment (see [`.env.example`](../.env.example)). It is not stored as a real secret in git.
+
+Gateway e2e: from `gateway/`, `uv run pytest tests/e2e -v` against a running Compose stack (and `docker compose -f docker-compose.retry.yml up -d` for retry tests on port 8081).

@@ -9,6 +9,7 @@ GitHub Actions workflow definitions for pull-request validation.
 | [`authentication-ci.yml`](authentication-ci.yml) | `authentication/**`, shared infra | Ruff format, Ruff lint |
 | [`auction-ci.yml`](auction-ci.yml) | `auction/**`, shared infra | Ruff format, Ruff lint, Alembic, e2e tests |
 | [`settlement-ci.yml`](settlement-ci.yml) | `settlement/**`, shared infra | Ruff format, Ruff lint, e2e tests |
+| [`gateway-ci.yml`](gateway-ci.yml) | `gateway/**`, Compose, service Dockerfiles, backend modules | Ruff, Compose stack, Kong e2e |
 | [`reusable-python-service.yml`](reusable-python-service.yml) | Called by service workflows | Shared uv, Ruff, Docker Compose, pytest steps |
 
 All service workflows run on pull requests to `main`. Shared paths (`docker-compose.yml`, `scripts/init-databases.sql`, `.github/workflows/**`) trigger every affected service job.
