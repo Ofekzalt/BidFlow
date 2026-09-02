@@ -47,4 +47,6 @@ The pull request template and module guidance provide baseline governance. Per-s
 - `auction-ci` — Ruff, Alembic upgrade, e2e tests against Postgres and RabbitMQ
 - `settlement-ci` — Ruff, e2e tests against Postgres and RabbitMQ
 
-Workflows are path-filtered and documented in [`workflows/README.md`](workflows/README.md). Frontend and gateway jobs are not implemented yet.
+Workflows are path-filtered and documented in [`workflows/README.md`](workflows/README.md). Frontend jobs are not implemented yet. `gateway-ci` builds the Compose stack and runs Kong e2e tests.
+
+Service-owned auction and settlement e2e still hit process ports with injected `X-User-Id`; they are not routed through Kong in this slice.

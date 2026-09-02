@@ -1,0 +1,73 @@
+name: gateway-ci
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - gateway/**
+      - docker-compose.yml
+      - docker-compose.retry.yml
+      - authentication/**
+      - auction/**
+      - settlement/**
+      - scripts/init-databases.sql
+      - .github/workflows/**
+
+concurrency:
+  group: gateway-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Start stack
+        run: |
+          docker compose up -d --build postgres rabbitmq authentication auction settlement kong
+          docker compose -f docker-compose.retry.yml up -d --build
+
+      - name: Wait for Kong
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8080/auctions >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8080/auctions >/dev/null
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8081/count >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -sf http://127.0.0.1:8081/count >/dev/null
+
+      - name: Install gateway test dependencies
+        working-directory: gateway
+        run: uv sync --group dev
+
+      - name: Ruff format
+        working-directory: gateway
+        run: uv run ruff format --check .
+
+      - name: Ruff lint
+        working-directory: gateway
+        run: uv run ruff check .
+
+      - name: Gateway e2e
+        working-directory: gateway
+        run: uv run pytest tests/e2e -v
+        env:
+          JWT_SECRET: change-me-to-a-long-random-string

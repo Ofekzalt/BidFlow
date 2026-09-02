@@ -1,0 +1,33 @@
+name: bidflow-gateway-retry
+
+services:
+  request-counter:
+    build: ./gateway/testdata/request-counter
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/count')",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  kong-retry:
+    image: kong:3.9
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong-retry.yml
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: "off"
+      KONG_NGINX_DAEMON: "off"
+      KONG_NGINX_PROXY_PROXY_NEXT_UPSTREAM: error timeout http_502 http_503 http_504
+    volumes:
+      - ./gateway/testdata/kong-retry.yml:/kong/kong-retry.yml:ro
+    ports:
+      - "8081:8000"
+    depends_on:
+      request-counter:
+        condition: service_healthy
