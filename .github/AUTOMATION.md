@@ -46,7 +46,9 @@ The pull request template and module guidance provide baseline governance. Per-s
 - `authentication-ci` — Ruff format and lint (e2e tests pending)
 - `auction-ci` — Ruff, Alembic upgrade, e2e tests against Postgres and RabbitMQ
 - `settlement-ci` — Ruff, e2e tests against Postgres and RabbitMQ
+- `gateway-ci` — builds the Compose stack and runs Kong e2e tests
+- `frontend-ci` — TypeScript typecheck and production build for `frontend/**`
 
-Workflows are path-filtered and documented in [`workflows/README.md`](workflows/README.md). Frontend jobs are not implemented yet. `gateway-ci` builds the Compose stack and runs Kong e2e tests.
+Workflows are path-filtered and documented in [`workflows/README.md`](workflows/README.md). Browser e2e through Kong is not implemented yet.
 
 Service-owned auction and settlement e2e still hit process ports with injected `X-User-Id`; they are not routed through Kong in this slice.
