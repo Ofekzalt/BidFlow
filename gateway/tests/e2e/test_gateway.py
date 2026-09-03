@@ -117,6 +117,37 @@ def test_correlation_ids_are_generated_and_echoed(client) -> None:
     assert echoed.headers.get("X-Correlation-Id") == "client-request-1"
 
 
+def test_cors_preflight_on_protected_route(client) -> None:
+    auction_id = uuid4()
+    response = client.options(
+        f"/auctions/{auction_id}/bids",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,idempotency-key",
+        },
+    )
+    assert 200 <= response.status_code < 300
+    assert (
+        response.headers.get("Access-Control-Allow-Origin") == "http://localhost:5173"
+    )
+
+
+def test_cors_unlisted_origin_is_not_allowed(client) -> None:
+    auction_id = uuid4()
+    response = client.options(
+        f"/auctions/{auction_id}/bids",
+        headers={
+            "Origin": "http://evil.example.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,idempotency-key",
+        },
+    )
+    assert (
+        response.headers.get("Access-Control-Allow-Origin") != "http://evil.example.com"
+    )
+
+
 def test_rate_limit_returns_429(client) -> None:
     time.sleep(1.1)
 

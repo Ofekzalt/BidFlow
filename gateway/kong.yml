@@ -19,6 +19,7 @@ services:
           - /auth/login
         methods:
           - POST
+          - OPTIONS
         strip_path: false
 
   - name: auction-reads
@@ -30,6 +31,7 @@ services:
           - /auctions
         methods:
           - GET
+          - OPTIONS
         strip_path: false
 
   - name: auction-writes
@@ -42,6 +44,7 @@ services:
         methods:
           - POST
           - PATCH
+          - OPTIONS
         strip_path: false
         plugins:
           - name: jwt
@@ -94,6 +97,7 @@ services:
           - GET
           - POST
           - DELETE
+          - OPTIONS
         strip_path: false
         plugins:
           - name: jwt
@@ -129,6 +133,26 @@ services:
                   end
 
 plugins:
+  - name: cors
+    config:
+      origins:
+        - http://localhost:5173
+      methods:
+        - GET
+        - POST
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Authorization
+        - Content-Type
+        - Idempotency-Key
+      exposed_headers:
+        - X-Request-Id
+        - X-Correlation-Id
+      credentials: false
+      max_age: 3600
+      preflight_continue: false
   - name: correlation-id
     config:
       header_name: X-Request-Id

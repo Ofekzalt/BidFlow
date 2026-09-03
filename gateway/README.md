@@ -58,6 +58,10 @@ Gateway verifies HS256 tokens with `JWT_SECRET`. Do not commit the secret or pla
 
 Global, in-memory (`policy: local`), **30 requests per second** and **200 per minute** per client IP. Redis is not used. Compose runs Kong with a single worker so local counters are not split across processes.
 
+## CORS
+
+The Vite dev server runs on `http://localhost:5173` as a separate origin from Kong (`http://localhost:8080`). A global `cors` plugin allows that origin for browser requests carrying `Authorization`, `Content-Type`, and `Idempotency-Key`. Browser-facing routes also accept `OPTIONS` so preflight requests match before JWT verification runs.
+
 ## Current state
 
 Declarative Kong 3.9 config in [`kong.yml`](kong.yml) is wired through Docker Compose. The proxy is published at `http://localhost:8080`. Authentication, auction, and settlement listen only on the Compose network.
