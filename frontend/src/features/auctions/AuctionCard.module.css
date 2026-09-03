@@ -1,0 +1,12 @@
+.card {
+  width: 100%;
+}
+
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.titleLink:hover {
+  color: var(--color-accent);
+}

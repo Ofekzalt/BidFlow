@@ -1,0 +1,9 @@
+.formError {
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+}

@@ -1,0 +1,21 @@
+.grid {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: 2fr 1fr;
+    align-items: start;
+  }
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+}

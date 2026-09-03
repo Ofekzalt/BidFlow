@@ -1,0 +1,23 @@
+.page {
+  width: 100%;
+}
+
+.list {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.empty {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: 14px;
+}
+
+.headerActions {
+  display: flex;
+  justify-content: flex-end;
+}

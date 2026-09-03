@@ -1,0 +1,12 @@
+.label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+.field {
+  width: 100%;
+}

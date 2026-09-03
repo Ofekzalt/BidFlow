@@ -1,0 +1,25 @@
+.list {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.method {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-sm);
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: 14px;
+}
+
+.stripeBox {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-secondary);
+}
