@@ -1,8 +1,43 @@
+## At a glance (for reviewers)
+
+**What:** Live timed-auction platform — microservices, event-driven messaging, Stripe settlement.
+
+**Stack:** Python, FastAPI, PostgreSQL, RabbitMQ, Kong, Stripe, Docker, React.
+
+**Try it locally (≈5 min):**
+
+```bash
+git clone https://github.com/Ofekzalt/BidFlow.git && cd BidFlow
+cp .env.example .env
+docker compose up -d
+```
+
+| Service     | URL (local)                          |
+|-------------|--------------------------------------|
+| API gateway | http://localhost:8080                |
+| RabbitMQ UI | http://localhost:15672 (guest/guest) |
+
+**Architecture (one screen):**
+
+```text
+[React] → [Kong :8080] → auth | auction | settlement
+                              ↓         ↓
+                         PostgreSQL   RabbitMQ → workers (outbox, idempotent handlers)
+                              ↓
+                         Stripe webhooks (deduplicated)
+```
+
+**What to look at:** `docker-compose.yml`, `auction/`, `settlement/`, `docs/`, per-service READMEs.
+
+**Author:** Ofek Zaltman — [LinkedIn](https://www.linkedin.com/in/ofek-zaltman) · [GitHub](https://github.com/Ofekzalt)
+
+---
+
 # Live Auction Platform
 
 An event-driven timed English-auction platform built to demonstrate defensible backend architecture, transactional correctness, failure recovery, observability, and local Kubernetes operations.
 
-This repository is a monorepo containing the complete source and local operational definition of one distributed application. The system is in early scaffolding: the approved requirements and implementation plan exist, while almost none of the application is implemented yet.
+This repository is a monorepo containing the complete source and local operational definition of one distributed application.
 
 ## System thesis
 
@@ -72,7 +107,7 @@ Copy `.env.example` to `.env` and fill in values before starting any service.
 
 ## Current state
 
-Module boundaries and intended architecture are documented. Application and infrastructure are not yet implemented.
+Services, Docker Compose, and module-level documentation are in active development. See each module README and `docs/` for implementation status and ADRs.
 
 ## Working in this repository
 
