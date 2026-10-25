@@ -3,7 +3,7 @@ from auction.repository.auction_repository import (
     claim_expired_open,
     create,
     get_by_id,
-    list_all,
+    list_visible,
 )
 from auction.repository.bid_repository import (
     get_idempotency_key,
@@ -27,7 +27,7 @@ __all__ = [
     "insert_bid",
     "insert_idempotency_key",
     "insert_outbox",
-    "list_all",
+    "list_visible",
     "record_event_id",
     "upsert_if_newer_version",
 ]

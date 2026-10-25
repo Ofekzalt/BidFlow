@@ -253,7 +253,12 @@ def test_close_worker_closes_expired_auctions(
     assert payload["ended_at"]
 
     assert client.get(f"/auctions/{live_id}").json()["status"] == "OPEN"
-    assert client.get(f"/auctions/{draft_id}").json()["status"] == "DRAFT"
+    assert (
+        client.get(f"/auctions/{draft_id}", headers={USER_ID_HEADER: seller_id}).json()[
+            "status"
+        ]
+        == "DRAFT"
+    )
     assert (
         client.post(
             f"/auctions/{unsold_id}/bids",

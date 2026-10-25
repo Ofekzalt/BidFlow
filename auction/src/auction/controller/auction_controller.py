@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auction.config import get_session
 from auction.constants import AUCTION_ROUTER_PREFIX, IDEMPOTENCY_KEY_HEADER
-from auction.dependencies import require_user_id
+from auction.dependencies import optional_user_id, require_user_id
 from auction.dto import (
     AuctionResponse,
     BidResponse,
@@ -17,7 +17,7 @@ from auction.dto import (
 )
 from auction.service import (
     create_auction,
-    get_auction,
+    get_visible_auction,
     list_auctions,
     open_auction,
     patch_auction,
@@ -28,6 +28,7 @@ router = APIRouter()
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 UserId = Annotated[uuid.UUID, Depends(require_user_id)]
+OptionalUserId = Annotated[uuid.UUID | None, Depends(optional_user_id)]
 IdempotencyKey = Annotated[str, Header(alias=IDEMPOTENCY_KEY_HEADER)]
 
 
@@ -54,8 +55,10 @@ async def create(
 
 
 @router.get(AUCTION_ROUTER_PREFIX, response_model=list[AuctionResponse])
-async def list_auctions_route(session: Session) -> list[AuctionResponse]:
-    auctions = await list_auctions(session)
+async def list_auctions_route(
+    session: Session, viewer_id: OptionalUserId
+) -> list[AuctionResponse]:
+    auctions = await list_auctions(session, viewer_id)
     return [AuctionResponse.model_validate(auction) for auction in auctions]
 
 
@@ -64,9 +67,9 @@ async def list_auctions_route(session: Session) -> list[AuctionResponse]:
     response_model=CurrentBidResponse,
 )
 async def get_current_bid(
-    auction_id: uuid.UUID, session: Session
+    auction_id: uuid.UUID, session: Session, viewer_id: OptionalUserId
 ) -> CurrentBidResponse:
-    auction = await get_auction(session, auction_id)
+    auction = await get_visible_auction(session, auction_id, viewer_id)
     return CurrentBidResponse(
         amount_cents=auction.current_price_cents,
         bidder_id=auction.current_winner_id,
@@ -134,6 +137,8 @@ async def open_auction_route(
     f"{AUCTION_ROUTER_PREFIX}/{{auction_id}}",
     response_model=AuctionResponse,
 )
-async def get_auction_route(auction_id: uuid.UUID, session: Session) -> AuctionResponse:
-    auction = await get_auction(session, auction_id)
+async def get_auction_route(
+    auction_id: uuid.UUID, session: Session, viewer_id: OptionalUserId
+) -> AuctionResponse:
+    auction = await get_visible_auction(session, auction_id, viewer_id)
     return AuctionResponse.model_validate(auction)

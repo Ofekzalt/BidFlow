@@ -67,17 +67,32 @@ def test_create_and_public_reads(client: httpx.Client) -> None:
 
     listed = client.get("/auctions")
     assert listed.status_code == 200
-    assert any(item["id"] == auction_id for item in listed.json())
+    assert all(item["id"] != auction_id for item in listed.json())
 
-    detail = client.get(f"/auctions/{auction_id}")
+    public_detail = client.get(f"/auctions/{auction_id}")
+    assert public_detail.status_code == 404
+    public_bid = client.get(f"/auctions/{auction_id}/current-bid")
+    assert public_bid.status_code == 404
+
+    seller_listed = client.get("/auctions", headers=headers)
+    assert seller_listed.status_code == 200
+    assert any(item["id"] == auction_id for item in seller_listed.json())
+
+    detail = client.get(f"/auctions/{auction_id}", headers=headers)
     assert detail.status_code == 200
     assert detail.json()["id"] == auction_id
 
-    current_bid = client.get(f"/auctions/{auction_id}/current-bid")
+    current_bid = client.get(f"/auctions/{auction_id}/current-bid", headers=headers)
     assert current_bid.status_code == 200
     bid = current_bid.json()
     assert bid["amount_cents"] == 1000
     assert bid["bidder_id"] is None
+
+    opened = client.post(f"/auctions/{auction_id}/open", headers=headers)
+    assert opened.status_code == 200
+    public_open = client.get(f"/auctions/{auction_id}")
+    assert public_open.status_code == 200
+    assert public_open.json()["status"] == "OPEN"
 
 
 def test_seller_edit_and_open(client: httpx.Client) -> None:

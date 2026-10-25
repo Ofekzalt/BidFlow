@@ -15,7 +15,7 @@ from auction.exception import (
     AuctionValidationError,
     ForbiddenError,
 )
-from auction.repository import create, get_by_id, list_all
+from auction.repository import create, get_by_id, list_visible
 
 
 async def create_auction(
@@ -50,8 +50,21 @@ async def get_auction(
     return auction
 
 
-async def list_auctions(session: AsyncSession) -> list[Auction]:
-    return await list_all(session)
+async def list_auctions(
+    session: AsyncSession, viewer_id: uuid.UUID | None = None
+) -> list[Auction]:
+    return await list_visible(session, viewer_id)
+
+
+async def get_visible_auction(
+    session: AsyncSession,
+    auction_id: uuid.UUID,
+    viewer_id: uuid.UUID | None,
+) -> Auction:
+    auction = await get_auction(session, auction_id)
+    if auction.status == AUCTION_STATUS_DRAFT and auction.seller_id != viewer_id:
+        raise AuctionNotFoundError()
+    return auction
 
 
 def _require_seller(auction: Auction, seller_id: uuid.UUID) -> None:

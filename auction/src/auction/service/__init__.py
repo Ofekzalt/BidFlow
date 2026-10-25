@@ -1,6 +1,7 @@
 from auction.service.auction_service import (
     create_auction,
     get_auction,
+    get_visible_auction,
     list_auctions,
     open_auction,
     patch_auction,
@@ -19,6 +20,7 @@ __all__ = [
     "close_expired_batch",
     "create_auction",
     "get_auction",
+    "get_visible_auction",
     "is_payment_ready",
     "list_auctions",
     "open_auction",

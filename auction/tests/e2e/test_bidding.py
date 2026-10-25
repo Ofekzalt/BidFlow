@@ -175,6 +175,20 @@ def test_bidding(client: httpx.Client) -> None:
         == 409
     )
 
+    future_id = _create_open_auction(
+        client,
+        seller_id,
+        title="Not started",
+        start_time=(now + timedelta(days=1)).isoformat(),
+        end_time=(now + timedelta(days=2)).isoformat(),
+    )
+    assert (
+        _bid(
+            client, future_id, bidder_id, 1100, idempotency_key=str(uuid.uuid4())
+        ).status_code
+        == 409
+    )
+
     assert (
         _bid(
             client, auction_id, bidder_id, 1000, idempotency_key=str(uuid.uuid4())
