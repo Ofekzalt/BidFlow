@@ -21,4 +21,6 @@ jobs:
     uses: ./.github/workflows/reusable-python-service.yml
     with:
       working-directory: authentication
-      run-tests: false
+      run-tests: true
+      run-migrations: true
+      database-url: postgresql+asyncpg://authentication:authentication@localhost:5432/authentication

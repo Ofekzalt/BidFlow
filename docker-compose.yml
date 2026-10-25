@@ -30,7 +30,7 @@ services:
     build: ./authentication
     environment:
       DATABASE_URL: postgresql+asyncpg://authentication:authentication@postgres:5432/authentication
-      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-string}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_ISSUER: ${JWT_ISSUER:-authentication}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-live-auction-platform}
     depends_on:
@@ -78,7 +78,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://settlement:settlement@postgres:5432/settlement
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?Set STRIPE_WEBHOOK_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,6 +97,70 @@ services:
       retries: 12
       start_period: 20s
 
+  auction-close-worker:
+    build: ./auction
+    entrypoint: ["uv", "run", "python", "-m", "auction.workers.close_worker"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://auction:auction@postgres:5432/auction
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      auction:
+        condition: service_healthy
+
+  auction-outbox-worker:
+    build: ./auction
+    entrypoint: ["uv", "run", "python", "-m", "auction.workers.outbox_worker"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://auction:auction@postgres:5432/auction
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      auction:
+        condition: service_healthy
+
+  auction-eligibility-consumer:
+    build: ./auction
+    entrypoint: ["uv", "run", "python", "-m", "auction.workers.eligibility_consumer"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://auction:auction@postgres:5432/auction
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      auction:
+        condition: service_healthy
+
+  auction-payment-result-consumer:
+    build: ./auction
+    entrypoint: ["uv", "run", "python", "-m", "auction.workers.payment_result_consumer"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://auction:auction@postgres:5432/auction
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      auction:
+        condition: service_healthy
+
+  settlement-outbox-worker:
+    build: ./settlement
+    entrypoint: ["uv", "run", "python", "-m", "settlement.workers.outbox_worker"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://settlement:settlement@postgres:5432/settlement
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?Set STRIPE_WEBHOOK_SECRET in .env}
+    depends_on:
+      settlement:
+        condition: service_healthy
+
+  settlement-auction-ended-consumer:
+    build: ./settlement
+    entrypoint: ["uv", "run", "python", "-m", "settlement.workers.auction_ended_consumer"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://settlement:settlement@postgres:5432/settlement
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?Set STRIPE_WEBHOOK_SECRET in .env}
+    depends_on:
+      settlement:
+        condition: service_healthy
+
   kong:
     image: kong:3.9
     entrypoint: ["/bin/sh", "/gateway-entrypoint.sh"]
@@ -107,7 +171,7 @@ services:
       KONG_NGINX_DAEMON: "off"
       KONG_NGINX_WORKER_PROCESSES: "1"
       KONG_NGINX_PROXY_PROXY_NEXT_UPSTREAM: error timeout http_502 http_503 http_504
-      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-string}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
     volumes:
       - ./gateway/kong.yml:/kong/kong.yml:ro
       - ./gateway/docker-entrypoint.sh:/gateway-entrypoint.sh:ro
@@ -121,5 +185,27 @@ services:
       settlement:
         condition: service_healthy
 
+  frontend:
+    image: node:22-bookworm-slim
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080
+      VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-pk_test_placeholder}
+    command:
+      [
+        "sh",
+        "-c",
+        "npm install && npm install @rollup/rollup-linux-arm64-gnu && npm run dev -- --host 0.0.0.0 --port 5173",
+      ]
+    depends_on:
+      kong:
+        condition: service_started
+
 volumes:
   postgres_data:
+  frontend_node_modules:

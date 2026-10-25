@@ -75,9 +75,9 @@ HTTP endpoints (port `8002`):
 - `PATCH /auctions/{id}` — seller only, `DRAFT` only
 - `POST /auctions/{id}/open` — seller opens `DRAFT → OPEN`
 - `POST /auctions/{id}/bids` — bidder places a bid; requires `X-User-Id` and `Idempotency-Key`
-- `GET /auctions`, `GET /auctions/{id}`, `GET /auctions/{id}/current-bid` — public reads
+- `GET /auctions`, `GET /auctions/{id}`, `GET /auctions/{id}/current-bid` — public reads of non-draft auctions; sellers may read their own `DRAFT`s when `X-User-Id` is present
 
-Money is integer cents. `starting_price_cents` must be greater than 0. `start_time` must be before `end_time`. Bid `amount_cents` must be greater than `current_price_cents`. Missing `X-User-Id` on writes returns `401`. Non-seller writes and ineligible bidders return `403`. Edits after `OPEN`, bids after close or on a non-open auction, and idempotency key reuse with a different body return `409`.
+Money is integer cents. `starting_price_cents` must be greater than 0. `start_time` must be before `end_time`. Bids are rejected until `start_time` and after `end_time`. Bid `amount_cents` must be greater than `current_price_cents`. Missing `X-User-Id` on writes returns `401`. Non-seller writes and ineligible bidders return `403`. Edits after `OPEN`, bids after close or on a non-open auction, and idempotency key reuse with a different body return `409`.
 
 Payment eligibility is the local `bidder_payment_status` projection. Unknown or `payment_ready=false` rejects the bid. The eligibility consumer applies `PaymentMethodReady` / `PaymentMethodRemoved` from RabbitMQ via `apply_payment_status`. Tests may still seed the table or publish those events on the bus. See [`docs/adr/0003-auction-payment-eligibility-projection.md`](../docs/adr/0003-auction-payment-eligibility-projection.md) and [`docs/adr/0004-transactional-outbox-and-retry-headers.md`](../docs/adr/0004-transactional-outbox-and-retry-headers.md).
 

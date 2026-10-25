@@ -117,6 +117,37 @@ def test_correlation_ids_are_generated_and_echoed(client) -> None:
     assert echoed.headers.get("X-Correlation-Id") == "client-request-1"
 
 
+def test_cors_preflight_on_protected_route(client) -> None:
+    auction_id = uuid4()
+    response = client.options(
+        f"/auctions/{auction_id}/bids",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,idempotency-key",
+        },
+    )
+    assert 200 <= response.status_code < 300
+    assert (
+        response.headers.get("Access-Control-Allow-Origin") == "http://localhost:5173"
+    )
+
+
+def test_cors_unlisted_origin_is_not_allowed(client) -> None:
+    auction_id = uuid4()
+    response = client.options(
+        f"/auctions/{auction_id}/bids",
+        headers={
+            "Origin": "http://evil.example.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,idempotency-key",
+        },
+    )
+    assert (
+        response.headers.get("Access-Control-Allow-Origin") != "http://evil.example.com"
+    )
+
+
 def test_rate_limit_returns_429(client) -> None:
     time.sleep(1.1)
 
@@ -126,3 +157,41 @@ def test_rate_limit_returns_429(client) -> None:
     with ThreadPoolExecutor(max_workers=20) as pool:
         statuses = list(pool.map(lambda _: ping(), range(80)))
     assert 429 in statuses
+
+
+def test_draft_auction_is_hidden_until_seller_reads(client) -> None:
+    user_id, token = register_and_login(client)
+    created = client.post(
+        "/auctions",
+        headers={"Authorization": f"Bearer {token}"},
+        json=auction_body(),
+    )
+    assert created.status_code == 201
+    auction_id = created.json()["id"]
+
+    public_list = client.get("/auctions")
+    assert public_list.status_code == 200
+    assert all(item["id"] != auction_id for item in public_list.json())
+    public_detail = client.get(f"/auctions/{auction_id}")
+    assert public_detail.status_code == 404
+
+    seller_list = client.get("/auctions", headers={"Authorization": f"Bearer {token}"})
+    assert seller_list.status_code == 200
+    assert any(item["id"] == auction_id for item in seller_list.json())
+    seller_detail = client.get(
+        f"/auctions/{auction_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert seller_detail.status_code == 200
+    assert seller_detail.json()["seller_id"] == user_id
+
+
+def test_stripe_webhook_is_not_rate_limited(client) -> None:
+    time.sleep(1.1)
+
+    def ping() -> int:
+        return client.post("/webhooks/stripe", content=b"{}").status_code
+
+    with ThreadPoolExecutor(max_workers=20) as pool:
+        statuses = list(pool.map(lambda _: ping(), range(80)))
+    assert 429 not in statuses

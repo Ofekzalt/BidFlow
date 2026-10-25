@@ -27,7 +27,10 @@ async def create_setup_intent(
         params={
             "customer": stripe_customer_id,
             "usage": "off_session",
-            "automatic_payment_methods": {"enabled": True},
+            "automatic_payment_methods": {
+                "enabled": True,
+                "allow_redirects": "never",
+            },
         },
     )
     assert setup_intent.client_secret is not None

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auction.constants import (
@@ -49,8 +49,20 @@ async def get_by_id(
     return result.scalar_one_or_none()
 
 
-async def list_all(session: AsyncSession) -> list[Auction]:
-    result = await session.execute(select(Auction).order_by(Auction.created_at.desc()))
+async def list_visible(
+    session: AsyncSession, viewer_id: uuid.UUID | None
+) -> list[Auction]:
+    stmt = select(Auction).order_by(Auction.created_at.desc())
+    if viewer_id is None:
+        stmt = stmt.where(Auction.status != AUCTION_STATUS_DRAFT)
+    else:
+        stmt = stmt.where(
+            or_(
+                Auction.status != AUCTION_STATUS_DRAFT,
+                Auction.seller_id == viewer_id,
+            )
+        )
+    result = await session.execute(stmt)
     return list[Auction](result.scalars().all())
 
 

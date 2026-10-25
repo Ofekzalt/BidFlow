@@ -9,11 +9,13 @@
 ```bash
 git clone https://github.com/Ofekzalt/BidFlow.git && cd BidFlow
 cp .env.example .env
-docker compose up -d
+# Set a unique JWT_SECRET, Stripe test keys, and VITE_STRIPE_PUBLISHABLE_KEY in .env
+docker compose up -d --build
 ```
 
 | Service     | URL (local)                          |
 |-------------|--------------------------------------|
+| Frontend    | http://localhost:5173                |
 | API gateway | http://localhost:8080                |
 | RabbitMQ UI | http://localhost:15672 (guest/guest) |
 
@@ -97,17 +99,28 @@ Planned infrastructure:
 
 ## Local setup
 
+Copy `.env.example` to `.env` and set a unique `JWT_SECRET`, Stripe test keys, plus `VITE_STRIPE_PUBLISHABLE_KEY`. Do not leave the example `JWT_SECRET` or `STRIPE_WEBHOOK_SECRET` values.
+
 ```bash
-docker compose up -d
+docker compose up -d --build
+bash scripts/setup-stripe-webhook-local.sh
+docker compose up -d --force-recreate settlement settlement-outbox-worker settlement-auction-ended-consumer
+```
+
+- Kong API: `http://localhost:8080`
+- Frontend (Compose): `http://localhost:5173`
+
+Run the automated Phase 7 acceptance journey through Kong:
+
+```bash
+bash scripts/acceptance-journey-kong.sh
 ```
 
 Postgres initialises the three service databases automatically on first start via [`scripts/init-databases.sql`](scripts/init-databases.sql).
 
-Copy `.env.example` to `.env` and fill in values before starting any service.
-
 ## Current state
 
-Services, Docker Compose, and module-level documentation are in active development. See each module README and `docs/` for implementation status and ADRs.
+Phase 7 is implemented: Kong gateway, React frontend, auction/settlement workers in Compose, and a verified Kong acceptance journey (register → payment method → create/open auction → bid → close → `SOLD` / notifications). Phase 8 (resilience tests, observability, Helm) is next.
 
 ## Working in this repository
 

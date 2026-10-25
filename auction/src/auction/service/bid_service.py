@@ -65,7 +65,10 @@ async def place_bid(
 
     if auction.status != AUCTION_STATUS_OPEN:
         raise AuctionNotOpenError()
-    if datetime.now(UTC) >= auction.end_time:
+    now = datetime.now(UTC)
+    if now < auction.start_time:
+        raise AuctionNotOpenError()
+    if now >= auction.end_time:
         raise AuctionEndedError()
     if auction.seller_id == bidder_id:
         raise ForbiddenError()

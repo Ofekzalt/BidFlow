@@ -15,3 +15,14 @@ def require_user_id(
         return uuid.UUID(x_user_id)
     except ValueError:
         raise HTTPException(status_code=401) from None
+
+
+def optional_user_id(
+    x_user_id: Annotated[str | None, Header(alias=USER_ID_HEADER)] = None,
+) -> uuid.UUID | None:
+    if not x_user_id:
+        return None
+    try:
+        return uuid.UUID(x_user_id)
+    except ValueError:
+        raise HTTPException(status_code=401) from None

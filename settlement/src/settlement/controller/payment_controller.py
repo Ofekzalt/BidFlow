@@ -24,6 +24,7 @@ from settlement.service import (
     list_user_notifications,
     remove_payment_method,
 )
+from settlement.service.payment_method_service import CustomerNotReadyError
 from settlement.service.payment_result_service import PaymentIntentNotReadyError
 
 router = APIRouter()
@@ -72,6 +73,6 @@ async def stripe_webhook(
         await handle_stripe_webhook(session, payload, stripe_signature)
     except SignatureVerificationError:
         raise HTTPException(status_code=400) from None
-    except PaymentIntentNotReadyError:
+    except (PaymentIntentNotReadyError, CustomerNotReadyError):
         raise HTTPException(status_code=503) from None
     return {"received": True}

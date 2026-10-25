@@ -26,7 +26,7 @@ def settlement_server(settlement_schema: None) -> Iterator[str]:
         "DATABASE_URL": DATABASE_URL,
         "PYTHONPATH": str(SETTLEMENT_ROOT / "src"),
         "STRIPE_SECRET_KEY": "sk_test_placeholder",
-        "STRIPE_WEBHOOK_SECRET": "whsec_placeholder",
+        "STRIPE_WEBHOOK_SECRET": "whsec_test_default",
     }
     process = subprocess.Popen(
         [

@@ -36,6 +36,9 @@ jobs:
         run: |
           docker compose up -d --build postgres rabbitmq authentication auction settlement kong
           docker compose -f docker-compose.retry.yml up -d --build
+        env:
+          JWT_SECRET: gateway-ci-jwt-secret-not-the-example-placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_ci_not_placeholder
 
       - name: Wait for Kong
         run: |
@@ -70,4 +73,4 @@ jobs:
         working-directory: gateway
         run: uv run pytest tests/e2e -v
         env:
-          JWT_SECRET: change-me-to-a-long-random-string
+          JWT_SECRET: gateway-ci-jwt-secret-not-the-example-placeholder

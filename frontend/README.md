@@ -39,4 +39,38 @@ Browser bundles are public. Never include `JWT_SECRET`, Stripe secret keys, webh
 
 ## Current state
 
-Folder scaffold only. No Vite application or package manifest exists yet.
+Vite React TypeScript app with CSS Modules, Base UI primitives, TanStack Query, Zod DTOs, and axios. The browser calls Kong at `VITE_API_BASE_URL` (default `http://localhost:8080`). Stripe Elements uses only `VITE_STRIPE_PUBLISHABLE_KEY`.
+
+Implemented screens: register/login, auction list and detail (1.5s polling, server-derived countdown), bid form, draft create/edit/open, payment-method setup, and notifications. App shell navigation lives in `src/layout/AppLayout.tsx`.
+
+Local development:
+
+```bash
+docker compose up -d
+bash scripts/setup-stripe-webhook-local.sh
+docker compose up -d --force-recreate settlement settlement-outbox-worker settlement-auction-ended-consumer
+```
+
+Open `http://localhost:5173` (Compose `frontend` service) or run Vite on the host:
+
+```bash
+npm --prefix frontend install
+npm --prefix frontend run dev
+```
+
+Copy root `.env.example` to `.env` and set `VITE_STRIPE_PUBLISHABLE_KEY`. Compose reads it for the `frontend` service.
+
+Automated Kong journey (register → payment → bid → close → `SOLD`):
+
+```bash
+bash scripts/acceptance-journey-kong.sh
+```
+
+Verification:
+
+```bash
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+```
+
+Pull requests that touch `frontend/**` run `frontend-ci` (typecheck and build).
