@@ -6,7 +6,7 @@ GitHub Actions workflow definitions for pull-request validation.
 
 | Workflow | Trigger paths | Checks |
 | --- | --- | --- |
-| [`authentication-ci.yml`](authentication-ci.yml) | `authentication/**`, shared infra | Ruff format, Ruff lint |
+| [`authentication-ci.yml`](authentication-ci.yml) | `authentication/**`, shared infra | Ruff format, Ruff lint, Alembic, e2e tests |
 | [`auction-ci.yml`](auction-ci.yml) | `auction/**`, shared infra | Ruff format, Ruff lint, Alembic, e2e tests |
 | [`settlement-ci.yml`](settlement-ci.yml) | `settlement/**`, shared infra | Ruff format, Ruff lint, e2e tests |
 | [`gateway-ci.yml`](gateway-ci.yml) | `gateway/**`, Compose, service Dockerfiles, backend modules | Ruff, Compose stack, Kong e2e |
