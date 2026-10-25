@@ -7,11 +7,15 @@ from settlement.entity import StripeCustomer
 
 
 async def get_by_user_id(
-    session: AsyncSession, user_id: uuid.UUID
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    *,
+    for_update: bool = False,
 ) -> StripeCustomer | None:
-    result = await session.execute(
-        select(StripeCustomer).where(StripeCustomer.user_id == user_id)
-    )
+    stmt = select(StripeCustomer).where(StripeCustomer.user_id == user_id)
+    if for_update:
+        stmt = stmt.with_for_update()
+    result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
 

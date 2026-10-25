@@ -21,9 +21,14 @@ from settlement.repository import (
     get_by_id,
     get_by_stripe_customer_id,
     get_by_stripe_payment_method_id,
+    get_by_user_id,
     insert_outbox,
     list_by_user,
 )
+
+
+class CustomerNotReadyError(Exception):
+    pass
 
 
 async def next_payment_method_version(session: AsyncSession, user_id: uuid.UUID) -> int:
@@ -42,6 +47,7 @@ async def next_payment_method_version(session: AsyncSession, user_id: uuid.UUID)
 async def emit_payment_method_event(
     session: AsyncSession, user_id: uuid.UUID, event_type: str
 ) -> None:
+    await get_by_user_id(session, user_id, for_update=True)
     version = await next_payment_method_version(session, user_id)
     await insert_outbox(
         session,
@@ -62,7 +68,7 @@ async def persist_attached_payment_method(
         session, stripe_customer_id, for_update=True
     )
     if customer is None:
-        return
+        raise CustomerNotReadyError()
     await clear_defaults_for_user(session, customer.user_id)
     await create_payment_method(
         session,
@@ -96,12 +102,16 @@ async def remove_payment_method(
     if method is None or method.user_id != user_id:
         raise HTTPException(status_code=404)
     stripe_payment_method_id = method.stripe_payment_method_id
+    was_default = method.is_default
     await delete_payment_method(session, method)
     remaining = await list_by_user(session, user_id)
     if not remaining:
         await emit_payment_method_event(
             session, user_id, EVENT_TYPE_PAYMENT_METHOD_REMOVED
         )
+    elif was_default:
+        remaining[0].is_default = True
+        await session.flush()
     client = create_stripe_client()
     try:
         await asyncio.to_thread(

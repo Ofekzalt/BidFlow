@@ -89,6 +89,31 @@ def _attached_event(customer_id: str, payment_method_id: str) -> bytes:
     return json.dumps(event, separators=(",", ":")).encode()
 
 
+def _setup_succeeded_event(customer_id: str, payment_method_id: str) -> bytes:
+    event = {
+        "id": f"evt_{uuid.uuid4().hex}",
+        "object": "event",
+        "type": "setup_intent.succeeded",
+        "data": {
+            "object": {
+                "id": f"seti_{uuid.uuid4().hex}",
+                "object": "setup_intent",
+                "customer": customer_id,
+                "payment_method": payment_method_id,
+            }
+        },
+    }
+    return json.dumps(event, separators=(",", ":")).encode()
+
+
+def _webhook_event_count() -> int:
+    with psycopg.connect(_sync_dsn(DATABASE_URL)) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM stripe_webhook_events")
+            row = cur.fetchone()
+    return int(row[0]) if row else 0
+
+
 @pytest.fixture
 def stripe_stub() -> Iterator[tuple[str, type[_StripeHandler]]]:
     _StripeHandler.log = []
@@ -311,3 +336,38 @@ def test_second_attached_method_is_sole_default(settlement_server: str) -> None:
     defaults = [item for item in methods if item["is_default"] is True]
     assert len(defaults) == 1
     assert defaults[0]["stripe_payment_method_id"] == second_pm
+
+    removed = httpx.delete(
+        f"{settlement_server}/payments/methods/{defaults[0]['id']}",
+        headers=headers,
+        timeout=5.0,
+    )
+    assert removed.status_code == 204
+    after_delete = httpx.get(
+        f"{settlement_server}/payments/methods", headers=headers, timeout=5.0
+    )
+    assert after_delete.status_code == 200
+    remaining = after_delete.json()
+    assert len(remaining) == 1
+    assert remaining[0]["stripe_payment_method_id"] == first_pm
+    assert remaining[0]["is_default"] is True
+
+
+def test_attach_webhook_without_customer_is_not_recorded(
+    settlement_server: str,
+) -> None:
+    before = _webhook_event_count()
+    payload = _setup_succeeded_event(
+        f"cus_missing_{uuid.uuid4().hex}", f"pm_card_{uuid.uuid4().hex}"
+    )
+    webhook = httpx.post(
+        f"{settlement_server}/webhooks/stripe",
+        content=payload,
+        headers={
+            "Stripe-Signature": _sign(payload),
+            "Content-Type": "application/json",
+        },
+        timeout=5.0,
+    )
+    assert webhook.status_code == 503
+    assert _webhook_event_count() == before
