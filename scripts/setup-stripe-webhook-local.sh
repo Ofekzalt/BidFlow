@@ -2,19 +2,20 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_FILE="${ROOT}/settlement/.env"
+SETTLEMENT_ENV_FILE="${ROOT}/settlement/.env"
+ROOT_ENV_FILE="${ROOT}/.env"
 FORWARD_URL="${STRIPE_WEBHOOK_FORWARD_URL:-http://localhost:8080/webhooks/stripe}"
 LOG_FILE="${ROOT}/.stripe-listen.log"
 PID_FILE="${ROOT}/.stripe-listen.pid"
 
-if [[ ! -f "${ENV_FILE}" ]]; then
-  echo "Missing ${ENV_FILE}. Copy settlement/.env.example first." >&2
+if [[ ! -f "${SETTLEMENT_ENV_FILE}" ]]; then
+  echo "Missing ${SETTLEMENT_ENV_FILE}. Copy settlement/.env.example first." >&2
   exit 1
 fi
 
-STRIPE_SECRET_KEY="$(grep '^STRIPE_SECRET_KEY=' "${ENV_FILE}" | cut -d= -f2-)"
+STRIPE_SECRET_KEY="$(grep '^STRIPE_SECRET_KEY=' "${SETTLEMENT_ENV_FILE}" | cut -d= -f2-)"
 if [[ -z "${STRIPE_SECRET_KEY}" || "${STRIPE_SECRET_KEY}" == *placeholder* ]]; then
-  echo "Set a real STRIPE_SECRET_KEY in ${ENV_FILE} first." >&2
+  echo "Set a real STRIPE_SECRET_KEY in ${SETTLEMENT_ENV_FILE} first." >&2
   exit 1
 fi
 
@@ -35,11 +36,23 @@ if [[ -z "${WEBHOOK_SECRET}" || "${WEBHOOK_SECRET}" != whsec_* ]]; then
   exit 1
 fi
 
-if grep -q '^STRIPE_WEBHOOK_SECRET=' "${ENV_FILE}"; then
-  sed -i '' "s|^STRIPE_WEBHOOK_SECRET=.*|STRIPE_WEBHOOK_SECRET=${WEBHOOK_SECRET}|" "${ENV_FILE}"
-else
-  printf '\nSTRIPE_WEBHOOK_SECRET=%s\n' "${WEBHOOK_SECRET}" >>"${ENV_FILE}"
-fi
+patch_env_value() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+  if [[ ! -f "${file}" ]]; then
+    return
+  fi
+  if grep -q "^${key}=" "${file}"; then
+    sed -i '' "s|^${key}=.*|${key}=${value}|" "${file}"
+  else
+    printf '\n%s=%s\n' "${key}" "${value}" >>"${file}"
+  fi
+}
+
+patch_env_value "${SETTLEMENT_ENV_FILE}" "STRIPE_WEBHOOK_SECRET" "${WEBHOOK_SECRET}"
+patch_env_value "${ROOT_ENV_FILE}" "STRIPE_WEBHOOK_SECRET" "${WEBHOOK_SECRET}"
+patch_env_value "${ROOT_ENV_FILE}" "STRIPE_SECRET_KEY" "${STRIPE_SECRET_KEY}"
 
 if [[ -f "${PID_FILE}" ]]; then
   OLD_PID="$(cat "${PID_FILE}")"
@@ -59,6 +72,10 @@ disown "${LISTENER_PID}" 2>/dev/null || true
 echo "${LISTENER_PID}" >"${PID_FILE}"
 
 echo "Updated STRIPE_WEBHOOK_SECRET in settlement/.env"
+if [[ -f "${ROOT_ENV_FILE}" ]]; then
+  echo "Updated STRIPE_WEBHOOK_SECRET and STRIPE_SECRET_KEY in .env"
+fi
 echo "Stripe listener running (pid $(cat "${PID_FILE}")) forwarding to ${FORWARD_URL}"
 echo "Logs: ${LOG_FILE}"
 echo "Stop with: kill \$(cat ${PID_FILE})"
+echo "Recreate settlement services: docker compose up -d --force-recreate settlement settlement-outbox-worker settlement-auction-ended-consumer"
