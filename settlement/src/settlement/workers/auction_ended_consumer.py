@@ -37,8 +37,21 @@ async def run() -> None:
                     finally:
                         bound_idle.set()
 
+                disconnected = asyncio.Event()
+
+                def on_connection_close(_sender: object, _exc: BaseException | None) -> None:
+                    disconnected.set()
+
+                connection.close_callbacks.add(on_connection_close)
                 consumer_tag = await queue.consume(on_message)
-                await stop.wait()
+                stop_task = asyncio.create_task(stop.wait())
+                disconnect_task = asyncio.create_task(disconnected.wait())
+                done, pending = await asyncio.wait(
+                    {stop_task, disconnect_task},
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                for task in pending:
+                    task.cancel()
                 await queue.cancel(consumer_tag)
                 await idle.wait()
         except Exception:
