@@ -7,6 +7,7 @@ import time
 import uuid
 from collections.abc import Iterator
 from datetime import UTC, datetime
+from pathlib import Path
 
 import aio_pika
 import httpx
@@ -20,6 +21,9 @@ from tests.conftest import AUCTION_ROOT, DATABASE_URL
 from tests.e2e.test_close_worker import _create_open_auction
 
 WINNER_AMOUNT_CENTS = 2500
+REPO_ROOT = Path(__file__).resolve().parents[3]
+PAYMENT_RESULT_QUEUE = "auction.payment-result"
+RABBITMQ_MANAGEMENT_URL = "http://guest:guest@127.0.0.1:15672"
 
 
 def _sync_dsn() -> str:
@@ -145,6 +149,60 @@ async def _publish_payment_result(
         await exchange.publish(message, routing_key=routing_key, mandatory=True)
     finally:
         await connection.close()
+
+
+def _rabbitmq_consumer_count(queue_name: str) -> int:
+    response = httpx.get(
+        f"{RABBITMQ_MANAGEMENT_URL}/api/queues/%2F/{queue_name}",
+        timeout=5,
+    )
+    if response.status_code == 404:
+        return 0
+    response.raise_for_status()
+    body = response.json()
+    return int(body.get("consumers", 0))
+
+
+def _wait_rabbitmq_consumers(
+    queue_name: str, min_count: int, timeout: float = 60
+) -> None:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if _rabbitmq_consumer_count(queue_name) >= min_count:
+            return
+        time.sleep(0.5)
+    count = _rabbitmq_consumer_count(queue_name)
+    raise AssertionError(
+        f"expected at least {min_count} consumers on {queue_name}, got {count}"
+    )
+
+
+def _restart_rabbitmq() -> None:
+    subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            str(REPO_ROOT / "docker-compose.yml"),
+            "restart",
+            "rabbitmq",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+    )
+    deadline = time.time() + 60
+    while time.time() < deadline:
+        try:
+            response = httpx.get(
+                f"{RABBITMQ_MANAGEMENT_URL}/api/overview",
+                timeout=5,
+            )
+            if response.status_code == 200:
+                return
+        except httpx.HTTPError:
+            pass
+        time.sleep(1)
+    raise AssertionError("rabbitmq did not become ready after restart")
 
 
 def _wait_status(
@@ -327,6 +385,35 @@ def test_payment_result_redelivers_when_killed_before_commit(
     consumer = _start_payment_result_consumer()
     try:
         sold = _wait_status(client, auction_id, "SOLD")
+        _assert_snapshot(sold, winner_id)
+        assert _processed_count(event_id) == 1
+    finally:
+        _stop_worker_group(consumer)
+
+
+def test_payment_result_consumer_reconnects_after_rabbitmq_restart(
+    client: httpx.Client,
+) -> None:
+    consumer = _start_payment_result_consumer()
+    try:
+        _wait_rabbitmq_consumers(PAYMENT_RESULT_QUEUE, 1)
+        _restart_rabbitmq()
+        _wait_rabbitmq_consumers(PAYMENT_RESULT_QUEUE, 1, timeout=60)
+
+        seller_id = str(uuid.uuid4())
+        winner_id = str(uuid.uuid4())
+        auction_id = _create_open_auction(client, seller_id)
+        _seed_payment_pending(auction_id, winner_id)
+        event_id = uuid.uuid4()
+        asyncio.run(
+            _publish_payment_result(
+                event_id=event_id,
+                auction_id=auction_id,
+                event_type="PaymentSucceeded",
+                routing_key="payment.succeeded.v1",
+            )
+        )
+        sold = _wait_status(client, auction_id, "SOLD", timeout=15)
         _assert_snapshot(sold, winner_id)
         assert _processed_count(event_id) == 1
     finally:
