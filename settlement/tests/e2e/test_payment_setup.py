@@ -85,7 +85,7 @@ def settlement_server(
         "DATABASE_URL": DATABASE_URL,
         "PYTHONPATH": str(SETTLEMENT_ROOT / "src"),
         "STRIPE_SECRET_KEY": "sk_test_placeholder",
-        "STRIPE_WEBHOOK_SECRET": "whsec_placeholder",
+        "STRIPE_WEBHOOK_SECRET": "whsec_test_default",
         "STRIPE_API_BASE": stripe_base,
     }
     process = subprocess.Popen(

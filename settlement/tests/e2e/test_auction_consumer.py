@@ -84,7 +84,7 @@ def _start_consumer(stripe_base: str) -> subprocess.Popen[bytes]:
         "RABBITMQ_URL": RABBITMQ_URL,
         "RABBITMQ_RETRY_DELAYS": "0.2,0.2,0.2",
         "STRIPE_SECRET_KEY": "sk_test_placeholder",
-        "STRIPE_WEBHOOK_SECRET": "whsec_placeholder",
+        "STRIPE_WEBHOOK_SECRET": "whsec_test_default",
         "STRIPE_API_BASE": stripe_base,
     }
     return subprocess.Popen(
