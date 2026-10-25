@@ -46,8 +46,24 @@ Implemented screens: register/login, auction list and detail (1.5s polling, serv
 Local development:
 
 ```bash
+docker compose up -d
+bash scripts/setup-stripe-webhook-local.sh
+docker compose up -d --force-recreate settlement settlement-outbox-worker settlement-auction-ended-consumer
+```
+
+Open `http://localhost:5173` (Compose `frontend` service) or run Vite on the host:
+
+```bash
 npm --prefix frontend install
 npm --prefix frontend run dev
+```
+
+Copy root `.env.example` to `.env` and set `VITE_STRIPE_PUBLISHABLE_KEY`. Compose reads it for the `frontend` service.
+
+Automated Kong journey (register → payment → bid → close → `SOLD`):
+
+```bash
+bash scripts/acceptance-journey-kong.sh
 ```
 
 Verification:

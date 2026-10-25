@@ -62,17 +62,28 @@ Planned infrastructure:
 
 ## Local setup
 
+Copy `.env.example` to `.env` and set a unique `JWT_SECRET`, Stripe test keys, plus `VITE_STRIPE_PUBLISHABLE_KEY`. Do not leave the example `JWT_SECRET` or `STRIPE_WEBHOOK_SECRET` values.
+
 ```bash
-docker compose up -d
+docker compose up -d --build
+bash scripts/setup-stripe-webhook-local.sh
+docker compose up -d --force-recreate settlement settlement-outbox-worker settlement-auction-ended-consumer
+```
+
+- Kong API: `http://localhost:8080`
+- Frontend (Compose): `http://localhost:5173`
+
+Run the automated Phase 7 acceptance journey through Kong:
+
+```bash
+bash scripts/acceptance-journey-kong.sh
 ```
 
 Postgres initialises the three service databases automatically on first start via [`scripts/init-databases.sql`](scripts/init-databases.sql).
 
-Copy `.env.example` to `.env` and fill in values before starting any service.
-
 ## Current state
 
-Module boundaries and intended architecture are documented. Application and infrastructure are not yet implemented.
+Phase 7 is implemented: Kong gateway, React frontend, auction/settlement workers in Compose, and a verified Kong acceptance journey (register → payment method → create/open auction → bid → close → `SOLD` / notifications). Phase 8 (resilience tests, observability, Helm) is next.
 
 ## Working in this repository
 
