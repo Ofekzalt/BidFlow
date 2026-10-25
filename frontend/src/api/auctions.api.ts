@@ -21,7 +21,6 @@ export type PatchAuctionRequest = z.infer<typeof patchAuctionRequestDto>;
 export function listAuctions() {
   return request("/auctions", {
     method: "GET",
-    auth: false,
     responseDto: auctionListDto,
   });
 }
@@ -29,7 +28,6 @@ export function listAuctions() {
 export function getAuction(auctionId: string) {
   return request(`/auctions/${auctionId}`, {
     method: "GET",
-    auth: false,
     responseDto: auctionResponseDto,
   });
 }
@@ -37,7 +35,6 @@ export function getAuction(auctionId: string) {
 export function getAuctionWithMeta(auctionId: string) {
   return requestWithMeta(`/auctions/${auctionId}`, {
     method: "GET",
-    auth: false,
     responseDto: auctionResponseDto,
   });
 }
@@ -45,7 +42,6 @@ export function getAuctionWithMeta(auctionId: string) {
 export function getCurrentBid(auctionId: string) {
   return request(`/auctions/${auctionId}/current-bid`, {
     method: "GET",
-    auth: false,
     responseDto: currentBidResponseDto,
   });
 }

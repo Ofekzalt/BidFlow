@@ -7,6 +7,8 @@ consumers:
       - algorithm: HS256
         key: authentication
         secret: __JWT_SECRET__
+  - id: 11111111-1111-1111-1111-111111111111
+    username: anonymous
 
 services:
   - name: authentication
@@ -21,6 +23,16 @@ services:
           - POST
           - OPTIONS
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              policy: local
+              second: 30
+              minute: 200
+              limit_by: ip
+              fault_tolerant: true
+              hide_client_headers: false
+              error_code: 429
 
   - name: auction-reads
     url: http://auction:8002
@@ -33,6 +45,50 @@ services:
           - GET
           - OPTIONS
         strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              key_claim_name: iss
+              claims_to_verify:
+                - exp
+              header_names:
+                - authorization
+              anonymous: "11111111-1111-1111-1111-111111111111"
+          - name: post-function
+            config:
+              access:
+                - |
+                  local function b64url(data)
+                    local pad = (4 - #data % 4) % 4
+                    data = data:gsub("-", "+"):gsub("_", "/") .. string.rep("=", pad)
+                    return ngx.decode_base64(data)
+                  end
+                  kong.service.request.clear_header("x-user-id")
+                  local consumer = kong.client.get_consumer()
+                  if not consumer or consumer.username == "anonymous" then return end
+                  local auth = kong.request.get_header("authorization")
+                  if not auth then return end
+                  local token = auth:match("[Bb]earer%s+(.+)")
+                  if not token then return end
+                  local payload = token:match("^[^%.]+%.([^%.]+)%.")
+                  if not payload then return kong.response.exit(401) end
+                  local decoded = b64url(payload)
+                  if not decoded then return kong.response.exit(401) end
+                  local aud = decoded:match('"aud"%s*:%s*"([^"]+)"')
+                  if aud ~= "live-auction-platform" then return kong.response.exit(401) end
+                  local sub = decoded:match('"sub"%s*:%s*"([^"]+)"')
+                  if type(sub) == "string" and sub ~= "" then
+                    kong.service.request.set_header("X-User-Id", sub)
+                  end
+          - name: rate-limiting
+            config:
+              policy: local
+              second: 30
+              minute: 200
+              limit_by: ip
+              fault_tolerant: true
+              hide_client_headers: false
+              error_code: 429
 
   - name: auction-writes
     url: http://auction:8002
@@ -78,6 +134,15 @@ services:
                   if type(sub) == "string" and sub ~= "" then
                     kong.service.request.set_header("X-User-Id", sub)
                   end
+          - name: rate-limiting
+            config:
+              policy: local
+              second: 30
+              minute: 200
+              limit_by: ip
+              fault_tolerant: true
+              hide_client_headers: false
+              error_code: 429
 
   - name: settlement
     url: http://settlement:8003
@@ -131,6 +196,15 @@ services:
                   if type(sub) == "string" and sub ~= "" then
                     kong.service.request.set_header("X-User-Id", sub)
                   end
+          - name: rate-limiting
+            config:
+              policy: local
+              second: 30
+              minute: 200
+              limit_by: ip
+              fault_tolerant: true
+              hide_client_headers: false
+              error_code: 429
 
 plugins:
   - name: cors
@@ -158,15 +232,6 @@ plugins:
       header_name: X-Request-Id
       generator: uuid
       echo_downstream: true
-  - name: rate-limiting
-    config:
-      policy: local
-      second: 30
-      minute: 200
-      limit_by: ip
-      fault_tolerant: true
-      hide_client_headers: false
-      error_code: 429
   - name: post-function
     config:
       access:
