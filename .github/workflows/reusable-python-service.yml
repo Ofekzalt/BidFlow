@@ -48,6 +48,9 @@ jobs:
       - name: Start infrastructure
         if: inputs.run-tests
         working-directory: .
+        env:
+          JWT_SECRET: ci-jwt-secret-not-the-example-placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_ci_not_placeholder
         run: |
           services="postgres"
           if [ "${{ inputs.needs-rabbitmq }}" = "true" ]; then

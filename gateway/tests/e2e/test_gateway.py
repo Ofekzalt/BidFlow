@@ -148,17 +148,6 @@ def test_cors_unlisted_origin_is_not_allowed(client) -> None:
     )
 
 
-def test_rate_limit_returns_429(client) -> None:
-    time.sleep(1.1)
-
-    def ping() -> int:
-        return client.get("/auctions").status_code
-
-    with ThreadPoolExecutor(max_workers=20) as pool:
-        statuses = list(pool.map(lambda _: ping(), range(80)))
-    assert 429 in statuses
-
-
 def test_draft_auction_is_hidden_until_seller_reads(client) -> None:
     user_id, token = register_and_login(client)
     created = client.post(
@@ -195,3 +184,14 @@ def test_stripe_webhook_is_not_rate_limited(client) -> None:
     with ThreadPoolExecutor(max_workers=20) as pool:
         statuses = list(pool.map(lambda _: ping(), range(80)))
     assert 429 not in statuses
+
+
+def test_rate_limit_returns_429(client) -> None:
+    time.sleep(1.1)
+
+    def ping() -> int:
+        return client.get("/auctions").status_code
+
+    with ThreadPoolExecutor(max_workers=20) as pool:
+        statuses = list(pool.map(lambda _: ping(), range(80)))
+    assert 429 in statuses

@@ -80,6 +80,12 @@ services:
                   if type(sub) == "string" and sub ~= "" then
                     kong.service.request.set_header("X-User-Id", sub)
                   end
+              header_filter:
+                - |
+                  local request_id = kong.response.get_header("X-Request-Id")
+                  if request_id then
+                    kong.response.set_header("X-Correlation-Id", request_id)
+                  end
           - name: rate-limiting
             config:
               policy: local
@@ -133,6 +139,12 @@ services:
                   local sub = decoded:match('"sub"%s*:%s*"([^"]+)"')
                   if type(sub) == "string" and sub ~= "" then
                     kong.service.request.set_header("X-User-Id", sub)
+                  end
+              header_filter:
+                - |
+                  local request_id = kong.response.get_header("X-Request-Id")
+                  if request_id then
+                    kong.response.set_header("X-Correlation-Id", request_id)
                   end
           - name: rate-limiting
             config:
@@ -195,6 +207,12 @@ services:
                   local sub = decoded:match('"sub"%s*:%s*"([^"]+)"')
                   if type(sub) == "string" and sub ~= "" then
                     kong.service.request.set_header("X-User-Id", sub)
+                  end
+              header_filter:
+                - |
+                  local request_id = kong.response.get_header("X-Request-Id")
+                  if request_id then
+                    kong.response.set_header("X-Correlation-Id", request_id)
                   end
           - name: rate-limiting
             config:
