@@ -40,9 +40,11 @@ async def run() -> None:
                 disconnected = asyncio.Event()
 
                 def on_connection_close(
-                    _sender: object, _exc: BaseException | None
+                    _sender: object,
+                    _exc: BaseException | None,
+                    bound_disconnected: asyncio.Event = disconnected,
                 ) -> None:
-                    disconnected.set()
+                    bound_disconnected.set()
 
                 connection.close_callbacks.add(on_connection_close)
                 consumer_tag = await queue.consume(on_message)
