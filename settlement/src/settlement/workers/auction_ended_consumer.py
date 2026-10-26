@@ -39,7 +39,9 @@ async def run() -> None:
 
                 disconnected = asyncio.Event()
 
-                def on_connection_close(_sender: object, _exc: BaseException | None) -> None:
+                def on_connection_close(
+                    _sender: object, _exc: BaseException | None
+                ) -> None:
                     disconnected.set()
 
                 connection.close_callbacks.add(on_connection_close)
